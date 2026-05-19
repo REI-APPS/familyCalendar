@@ -5,21 +5,34 @@ const { FileStore } = require('metro-cache');
 
 const config = getDefaultConfig(__dirname);
 
-// Use a stable on-disk store (shared across web/android)
 const root = process.env.METRO_CACHE_ROOT || path.join(__dirname, '.metro-cache');
 config.cacheStores = [
   new FileStore({ root: path.join(root, 'cache') }),
 ];
 
+// ---- Supabase + React Native fix --------------------------------------------
+// @supabase/realtime-js imports the Node-only 'ws' WebSocket package, which
+// pulls in 'stream', 'http', 'tls'... that do not exist in React Native.
+// React Native has a native global WebSocket, so we stub these on Android/iOS.
+config.resolver.resolveRequest = (context, moduleName, platform) => {
+  if (platform !== 'web') {
+    if (
+      moduleName === 'ws' ||
+      moduleName === 'stream' ||
+      moduleName === 'http' ||
+      moduleName === 'https' ||
+      moduleName === 'net' ||
+      moduleName === 'tls' ||
+      moduleName === 'zlib' ||
+      moduleName === 'crypto' ||
+      moduleName === 'buffer'
+    ) {
+      return { type: 'empty' };
+    }
+  }
+  return context.resolveRequest(context, moduleName, platform);
+};
+// -----------------------------------------------------------------------------
 
-// // Exclude unnecessary directories from file watching
-// config.watchFolders = [__dirname];
-// config.resolver.blacklistRE = /(.*)\/(__tests__|android|ios|build|dist|.git|node_modules\/.*\/android|node_modules\/.*\/ios|node_modules\/.*\/windows|node_modules\/.*\/macos)(\/.*)?$/;
-
-// // Alternative: use a more aggressive exclusion pattern
-// config.resolver.blacklistRE = /node_modules\/.*\/(android|ios|windows|macos|__tests__|\.git|.*\.android\.js|.*\.ios\.js)$/;
-
-// Reduce the number of workers to decrease resource usage
 config.maxWorkers = 2;
-
 module.exports = config;

@@ -21,7 +21,11 @@
       "android": {
         "buildType": "app-bundle"
       },
-      "autoIncrement": "versionCode"
+      "autoIncrement": "true",
+      "env": {
+        "EXPO_NO_METRO_CACHE": "1",
+        "EXPO_USE_METRO_WORKSPACE_ROOT": "0"
+      }
     }
   },
   "submit": {
