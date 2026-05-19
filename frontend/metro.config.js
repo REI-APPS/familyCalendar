@@ -5,15 +5,16 @@ const { FileStore } = require('metro-cache');
 
 const config = getDefaultConfig(__dirname);
 
+// Stable on-disk cache
 const root = process.env.METRO_CACHE_ROOT || path.join(__dirname, '.metro-cache');
 config.cacheStores = [
   new FileStore({ root: path.join(root, 'cache') }),
 ];
 
 // ---- Supabase + React Native fix --------------------------------------------
-// @supabase/realtime-js imports the Node-only 'ws' WebSocket package, which
-// pulls in 'stream', 'http', 'tls'... that do not exist in React Native.
-// React Native has a native global WebSocket, so we stub these on Android/iOS.
+// @supabase/realtime-js imports the Node-only 'ws' WebSocket package.
+// React Native already provides a global WebSocket, so we stub 'ws' (and its
+// Node-only deps) on native builds.
 config.resolver.resolveRequest = (context, moduleName, platform) => {
   if (platform !== 'web') {
     if (
@@ -35,4 +36,5 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
 // -----------------------------------------------------------------------------
 
 config.maxWorkers = 2;
+
 module.exports = config;

@@ -8,6 +8,9 @@ import { useFonts } from 'expo-font';
 import { Ionicons } from '@expo/vector-icons';
 import { AuthProvider } from '../src/contexts/AuthContext';
 import { FamilyProvider } from '../src/contexts/FamilyContext';
+import '../widget-task-handler';
+
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
