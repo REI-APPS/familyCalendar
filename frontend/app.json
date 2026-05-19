@@ -10,8 +10,6 @@
     "newArchEnabled": true,
     "primaryColor": "#FF8FA3",
     "description": "Organiza a rotina da tua família num só lugar. Cria horários por membro, vê o mês completo e sincroniza em tempo real entre todos os dispositivos.",
-    "githubUrl": "",
-    "privacy": "public",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.familia.agenda",
