@@ -1,11 +1,10 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFamily } from '../../src/contexts/FamilyContext';
 import { supabase } from '../../src/lib/supabase';
 import { colors, radius, spacing, memberPalette, typePalette } from '../../src/lib/theme';
-import { confirmAction } from '../../src/lib/confirm';
 
 type ModalState =
   | { kind: 'member'; id?: string; name: string; color: string }
@@ -13,63 +12,69 @@ type ModalState =
   | { kind: 'assign'; memberId: string }
   | null;
 
+type ConfirmState = { title: string; message: string; onConfirm: () => void } | null;
+
 export default function Members() {
   const { family, members, scheduleTypes, memberScheduleTypes, refresh } = useFamily();
   const [modal, setModal] = useState<ModalState>(null);
+  const [confirm, setConfirm] = useState<ConfirmState>(null);
+  const [toast, setToast] = useState<string>('');
+
+  const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3500); };
 
   if (!family) return <SafeAreaView style={styles.safe}><Text style={styles.empty}>Cria primeiro uma família.</Text></SafeAreaView>;
 
   const saveMember = async () => {
     if (modal?.kind !== 'member') return;
     const { id, name, color } = modal;
-    if (!name.trim()) return Alert.alert('Nome obrigatório');
+    if (!name.trim()) { showToast('Nome obrigatório'); return; }
     if (id) await supabase.from('members').update({ name, color }).eq('id', id);
     else await supabase.from('members').insert({ family_id: family.id, name, color });
     setModal(null); refresh();
   };
 
-  const deleteMember = (id: string) => {
-    confirmAction('Apagar membro?', 'Esta ação remove o membro e os seus horários.', async () => {
-      const { data, error } = await supabase.from('members').delete().eq('id', id).select();
-      if (error) {
-        Alert.alert('Erro ao apagar', error.message);
-        if (Platform.OS === 'web') window.alert('Erro ao apagar: ' + error.message);
-        return;
-      }
-      if (!data || data.length === 0) {
-        const msg = 'Membro não foi apagado. Possivelmente bloqueado por permissão (RLS) ou já não existe.';
-        Alert.alert('Aviso', msg);
-        if (Platform.OS === 'web') window.alert(msg);
-        return;
-      }
-      refresh();
+  const deleteMember = (id: string, name: string) => {
+    setConfirm({
+      title: 'Apagar membro?',
+      message: `Vais apagar "${name}" e todos os horários atribuídos a este membro.`,
+      onConfirm: async () => {
+        setConfirm(null);
+        const { data, error } = await supabase.from('members').delete().eq('id', id).select();
+        if (error) { showToast('Erro: ' + error.message); return; }
+        if (!data || data.length === 0) {
+          showToast('Bloqueado pelo Supabase (RLS). Executa SUPABASE_FIX_DELETE.sql no SQL Editor.');
+          return;
+        }
+        showToast(`"${name}" apagado.`);
+        refresh();
+      },
     });
   };
 
   const saveType = async () => {
     if (modal?.kind !== 'type') return;
     const { id, code, name, description, color } = modal;
-    if (!code.trim() || !name.trim()) return Alert.alert('Código e nome obrigatórios');
+    if (!code.trim() || !name.trim()) { showToast('Código e nome obrigatórios'); return; }
     if (id) await supabase.from('schedule_types').update({ code: code.toUpperCase(), name, description, color }).eq('id', id);
     else await supabase.from('schedule_types').insert({ family_id: family.id, code: code.toUpperCase(), name, description, color });
     setModal(null); refresh();
   };
 
-  const deleteType = (id: string) => {
-    confirmAction('Apagar tipo?', 'Esta ação remove o tipo e todos os horários que o usam.', async () => {
-      const { data, error } = await supabase.from('schedule_types').delete().eq('id', id).select();
-      if (error) {
-        Alert.alert('Erro ao apagar', error.message);
-        if (Platform.OS === 'web') window.alert('Erro ao apagar: ' + error.message);
-        return;
-      }
-      if (!data || data.length === 0) {
-        const msg = 'Tipo não foi apagado. Possivelmente bloqueado por permissão (RLS) ou já não existe.';
-        Alert.alert('Aviso', msg);
-        if (Platform.OS === 'web') window.alert(msg);
-        return;
-      }
-      refresh();
+  const deleteType = (id: string, name: string) => {
+    setConfirm({
+      title: 'Apagar tipo?',
+      message: `Vais apagar "${name}" e todos os horários que o usam.`,
+      onConfirm: async () => {
+        setConfirm(null);
+        const { data, error } = await supabase.from('schedule_types').delete().eq('id', id).select();
+        if (error) { showToast('Erro: ' + error.message); return; }
+        if (!data || data.length === 0) {
+          showToast('Bloqueado pelo Supabase (RLS). Executa SUPABASE_FIX_DELETE.sql no SQL Editor.');
+          return;
+        }
+        showToast(`"${name}" apagado.`);
+        refresh();
+      },
     });
   };
 
