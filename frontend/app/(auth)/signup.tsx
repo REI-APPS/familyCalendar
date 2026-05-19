@@ -9,20 +9,22 @@ export default function Signup() {
   const [email, setEmail] = useState('');
   const [pwd, setPwd] = useState('');
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
   const { signUp } = useAuth();
   const router = useRouter();
 
   const onSubmit = async () => {
-    if (!email || !pwd) return Alert.alert('Campos vazios', 'Preenche todos os campos');
-    if (pwd.length < 6) return Alert.alert('Palavra-passe curta', 'Mínimo 6 caracteres');
+    setErrorMsg(''); setSuccessMsg('');
+    if (!email || !pwd) { setErrorMsg('Preenche todos os campos'); return; }
+    if (pwd.length < 6) { setErrorMsg('Palavra-passe: mínimo 6 caracteres'); return; }
     setLoading(true);
     const { error } = await signUp(email.trim(), pwd);
     setLoading(false);
-    if (error) Alert.alert('Erro', error);
+    if (error) setErrorMsg(error);
     else {
-      Alert.alert('Conta criada', 'Verifica o teu email para confirmares a conta e depois inicia sessão.', [
-        { text: 'OK', onPress: () => router.replace('/(auth)/login') },
-      ]);
+      setSuccessMsg('Conta criada! Se a confirmação por email estiver ativa, verifica o teu email. Caso contrário, já podes entrar.');
+      setTimeout(() => router.replace('/(auth)/login'), 2500);
     }
   };
 
@@ -58,6 +60,8 @@ export default function Signup() {
               placeholderTextColor={colors.textSecondary}
               style={styles.input}
             />
+            {errorMsg ? <Text testID="signup-error" style={styles.errorText}>{errorMsg}</Text> : null}
+            {successMsg ? <Text testID="signup-success" style={styles.successText}>{successMsg}</Text> : null}
             <TouchableOpacity testID="signup-submit-button" style={styles.primaryBtn} onPress={onSubmit} disabled={loading}>
               <Text style={styles.primaryBtnText}>{loading ? 'A criar…' : 'Criar Conta'}</Text>
             </TouchableOpacity>
@@ -87,4 +91,6 @@ const styles = StyleSheet.create({
   primaryBtnText: { color: colors.textInverse, fontSize: 16, fontWeight: '700' },
   linkBtn: { marginTop: spacing.md, alignItems: 'center' },
   linkText: { color: colors.brand, fontWeight: '600' },
+  errorText: { color: colors.danger, fontSize: 14, marginBottom: 8, fontWeight: '600', textAlign: 'center' },
+  successText: { color: colors.success, fontSize: 14, marginBottom: 8, fontWeight: '600', textAlign: 'center' },
 });

@@ -9,15 +9,17 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [pwd, setPwd] = useState('');
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
   const { signIn } = useAuth();
   const router = useRouter();
 
   const onSubmit = async () => {
-    if (!email || !pwd) return Alert.alert('Campos vazios', 'Preenche email e palavra-passe');
+    setErrorMsg('');
+    if (!email || !pwd) { setErrorMsg('Preenche email e palavra-passe'); return; }
     setLoading(true);
     const { error } = await signIn(email.trim(), pwd);
     setLoading(false);
-    if (error) Alert.alert('Erro ao entrar', error);
+    if (error) setErrorMsg(error);
     else router.replace('/(app)');
   };
 
@@ -53,6 +55,7 @@ export default function Login() {
               placeholderTextColor={colors.textSecondary}
               style={styles.input}
             />
+            {errorMsg ? <Text testID="login-error" style={styles.errorText}>{errorMsg}</Text> : null}
             <TouchableOpacity testID="login-submit-button" style={styles.primaryBtn} onPress={onSubmit} disabled={loading}>
               <Text style={styles.primaryBtnText}>{loading ? 'A entrar…' : 'Entrar'}</Text>
             </TouchableOpacity>
@@ -83,4 +86,5 @@ const styles = StyleSheet.create({
   primaryBtnText: { color: colors.textInverse, fontSize: 16, fontWeight: '700' },
   linkBtn: { marginTop: spacing.md, alignItems: 'center' },
   linkText: { color: colors.brand, fontWeight: '600' },
+  errorText: { color: colors.danger, fontSize: 14, marginBottom: 8, fontWeight: '600', textAlign: 'center' },
 });
