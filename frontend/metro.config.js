@@ -5,27 +5,34 @@ const { FileStore } = require('metro-cache');
 
 const config = getDefaultConfig(__dirname);
 
-// Use a stable on-disk store (shared across web/android)
+// Stable on-disk cache
 const root = process.env.METRO_CACHE_ROOT || path.join(__dirname, '.metro-cache');
 config.cacheStores = [
   new FileStore({ root: path.join(root, 'cache') }),
 ];
 
-// Hermes does NOT support dynamic import() expressions like the one
-// @supabase/* uses for optional @opentelemetry/api tracing.
-// Alias these to an empty stub so Hermes can compile the release bundle.
+// ---- Supabase + Hermes fix --------------------------------------------------
+// The Node.js build of @supabase/realtime-js contains a dynamic `import()`
+// for optional @opentelemetry/api tracing. Hermes cannot parse that syntax,
+// so the AAB build fails at the createBundleReleaseJsAndAssets step.
+//
+// Telling Metro to prefer the "react-native"/"browser" package-exports
+// condition makes it pick the clean build without OpenTelemetry.
+config.resolver.unstable_enablePackageExports = true;
+config.resolver.unstable_conditionNames = ['react-native', 'browser', 'require'];
+
+// Extra safety: empty-stub any opentelemetry module that still slips through.
+const originalResolveRequest = config.resolver.resolveRequest;
 config.resolver.resolveRequest = (context, moduleName, platform) => {
-  if (
-    moduleName === '@opentelemetry/api' ||
-    moduleName === '@opentelemetry/core' ||
-    moduleName === '@opentelemetry/resources' ||
-    moduleName === '@opentelemetry/semantic-conventions' ||
-    moduleName === '@opentelemetry/sdk-trace-base'
-  ) {
+  if (moduleName.startsWith('@opentelemetry/')) {
     return { type: 'empty' };
+  }
+  if (originalResolveRequest) {
+    return originalResolveRequest(context, moduleName, platform);
   }
   return context.resolveRequest(context, moduleName, platform);
 };
+// -----------------------------------------------------------------------------
 
 config.maxWorkers = 2;
 
