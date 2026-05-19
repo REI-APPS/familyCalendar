@@ -23,7 +23,10 @@
         "backgroundColor": "#FDFDF9"
       },
       "edgeToEdgeEnabled": true,
-      "permissions": ["INTERNET", "RECEIVE_BOOT_COMPLETED"],
+      "permissions": [
+        "INTERNET",
+        "RECEIVE_BOOT_COMPLETED"
+      ],
       "blockedPermissions": [
         "android.permission.RECORD_AUDIO",
         "android.permission.CAMERA",
@@ -53,6 +56,13 @@
     },
     "runtimeVersion": {
       "policy": "appVersion"
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "2ab9499f-ab89-4d37-8f2c-349c6ac3a7d8"
+      }
+    },
+    "owner": "nrei"
   }
 }
