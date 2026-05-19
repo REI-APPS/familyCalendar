@@ -1,0 +1,95 @@
+{
+  "project_context": {
+    "app_name": "Agenda da Família",
+    "domain": "Family Calendar & Scheduling",
+    "platform": "React Native Expo (Android focus, .js files)",
+    "design_goal": "Warm, family-friendly, organized, trustworthy, highly accessible."
+  },
+  "theme_archetype": {
+    "theme": "LIGHT",
+    "archetype": "Hybrid: Archetype 3 (Pastel & Soft) + Archetype 6 (Vibrant Play)",
+    "vibe": "Optimistic, light, tactile, highly readable",
+    "e1_twist": "Neo-Brutalist Softness. Pair warm pastels with structural elements like 1px warm-grey borders to prevent the UI from looking purely childish. Maintain high visual structure for organization."
+  },
+  "colors": {
+    "base": {
+      "background": "#FDFDF9",
+      "surface": "#FFFFFF",
+      "surface_secondary": "#F5F3EC"
+    },
+    "text": {
+      "primary": "#2D3142",
+      "secondary": "#7D8299",
+      "inverse": "#FFFFFF"
+    },
+    "brand_primary": "#FF8FA3",
+    "member_colors": {
+      "User1": "#C8B6FF",
+      "User2": "#B9FBC0",
+      "User3": "#A2D2FF",
+      "User_Default": "#FDF0D5"
+    }
+  },
+  "typography": {
+    "headings_font": "Nunito",
+    "body_font": "Quicksand",
+    "hierarchy": {
+      "h1": { "fontSize": 36, "fontWeight": "800", "letterSpacing": -0.5 },
+      "h2": { "fontSize": 28, "fontWeight": "700", "letterSpacing": -0.3 },
+      "h3": { "fontSize": 20, "fontWeight": "700" },
+      "body_lg": { "fontSize": 18, "fontWeight": "600" },
+      "body": { "fontSize": 16, "fontWeight": "500" },
+      "label": { "fontSize": 12, "fontWeight": "800", "textTransform": "uppercase", "letterSpacing": 1.2 }
+    }
+  },
+  "spacing_and_layout": {
+    "screen_padding": 24,
+    "card_padding": 20,
+    "border_radius": {
+      "small": 8,
+      "medium": 16,
+      "large": 24,
+      "pill": 9999
+    },
+    "dashboard_grid": "Bento style for Today's view. Large asymmetrical cards rather than repetitive equal lists."
+  },
+  "components": {
+    "buttons": "Pill-shaped, chunky, solid colors. No drop shadows to maintain flat/soft UI look. Use subtle opacity feedback on press.",
+    "bottom_sheets": "Use for Event Creation, Member Management, and Schedule Type assignment. Dimmed background (rgba(0,0,0,0.4)), rounded top corners (24px).",
+    "calendar_month_view": "Flat grid layout. Avoid generic square cell borders. Use soft rounded indicator dots under dates for each scheduled member. Selected day expands into an elevated floating card.",
+    "calendar_day_view": "Vertical timeline. Schedule blocks take the background color of the Member. The Schedule Type (e.g., Infantário, Office) is displayed as bold text with a matching icon.",
+    "member_management": "List of members with swipe-to-delete/edit actions. Distinct 'Invite Family Member' prominent button.",
+    "schedule_types_config": "CRUD list to manage codes (INF, OFC, etc). Show chips to associate schedule types strictly to permitted members."
+  },
+  "testing_requirements": {
+    "data_testid": "All interactive and key informational elements MUST include a data-testid attribute to facilitate robust automated testing. In React Native, map this logically to the testID prop."
+  },
+  "assets": {
+    "icons": "Phosphor Icons (React Native SVG compatible). Clean, duotone preferred.",
+    "images": [
+      {
+        "category": "onboarding_illustration",
+        "url": "https://static.prod-images.emergentagent.com/jobs/cf3cbe69-d7ad-4e00-a02b-1e820137977d/images/707ccec94e63807f575dd07490699c27427240047a2af8ccabe416eb956ecf7a.png",
+        "description": "3D soft clay illustration of a happy family managing a giant colorful calendar, warm pastel colors."
+      },
+      {
+        "category": "empty_state_illustration",
+        "url": "https://static.prod-images.emergentagent.com/jobs/cf3cbe69-d7ad-4e00-a02b-1e820137977d/images/396e475980e63c539fd034b436cbcb92c8a6d57d760d78d51e83f7cc87238002.png",
+        "description": "3D soft clay illustration of a relaxing cozy living room, empty schedule."
+      }
+    ]
+  },
+  "instructions_to_main_agent": [
+    "Initialize Expo React Native project. Use standard JavaScript (.js).",
+    "Integrate Supabase for backend synchronization. Tables: Family, Users, ScheduleTypes, UserScheduleAssignments, DailySchedules.",
+    "Implement Authentication (Email/Password) linking users to a Family ID.",
+    "Pre-seed or allow easy addition of User1, User2, User3 upon Family creation.",
+    "Implement distinct schedule types management (ID, Code, Name, Description). Assign these types specifically to members (e.g., User1: INF, Casa).",
+    "Build 'Dashboard', 'Month View', and 'Day View'.",
+    "Add 'Export to PDF' for Month View (using expo-print or related library).",
+    "Add logic for sending invites to new members via email.",
+    "Prepare Android Home Screen Widget (requires native modules/Expo config plugins for Android AppWidgetProvider) showing today's schedules.",
+    "Apply styling rules exactly as described. Use Nunito and Quicksand via expo-font.",
+    "Ensure all interactive components have the data-testid prop defined for automated testing."
+  ]
+}
