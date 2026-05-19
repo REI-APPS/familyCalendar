@@ -13,11 +13,11 @@ export default function AppLayout() {
           backgroundColor: colors.surface,
           borderTopColor: colors.border,
           borderTopWidth: 1,
-          height: 64,
+          height: 70,
           paddingBottom: 10,
           paddingTop: 6,
         },
-        tabBarLabelStyle: { fontWeight: '700', fontSize: 11 },
+        tabBarLabelStyle: { fontWeight: '700', fontSize: 10 },
       }}
     >
       <Tabs.Screen
@@ -28,10 +28,24 @@ export default function AppLayout() {
         }}
       />
       <Tabs.Screen
+        name="week"
+        options={{
+          title: 'Semana',
+          tabBarIcon: ({ color, size }) => <Ionicons name="grid-outline" size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="month"
         options={{
           title: 'Mês',
           tabBarIcon: ({ color, size }) => <Ionicons name="calendar-outline" size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="bulk"
+        options={{
+          title: 'Preencher',
+          tabBarIcon: ({ color, size }) => <Ionicons name="flash-outline" size={size} color={color} />,
         }}
       />
       <Tabs.Screen

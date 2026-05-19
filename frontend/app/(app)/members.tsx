@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFamily } from '../../src/contexts/FamilyContext';
 import { supabase } from '../../src/lib/supabase';
 import { colors, radius, spacing, memberPalette, typePalette } from '../../src/lib/theme';
+import { confirmAction } from '../../src/lib/confirm';
 
 type ModalState =
   | { kind: 'member'; id?: string; name: string; color: string }
@@ -28,10 +29,11 @@ export default function Members() {
   };
 
   const deleteMember = (id: string) => {
-    Alert.alert('Apagar membro?', 'Esta ação remove o membro e os seus horários.', [
-      { text: 'Cancelar', style: 'cancel' },
-      { text: 'Apagar', style: 'destructive', onPress: async () => { await supabase.from('members').delete().eq('id', id); refresh(); } },
-    ]);
+    confirmAction('Apagar membro?', 'Esta ação remove o membro e os seus horários.', async () => {
+      const { error } = await supabase.from('members').delete().eq('id', id);
+      if (error) Alert.alert('Erro ao apagar', error.message);
+      else refresh();
+    });
   };
 
   const saveType = async () => {
@@ -44,10 +46,11 @@ export default function Members() {
   };
 
   const deleteType = (id: string) => {
-    Alert.alert('Apagar tipo?', '', [
-      { text: 'Cancelar', style: 'cancel' },
-      { text: 'Apagar', style: 'destructive', onPress: async () => { await supabase.from('schedule_types').delete().eq('id', id); refresh(); } },
-    ]);
+    confirmAction('Apagar tipo?', 'Esta ação remove o tipo e todos os horários que o usam.', async () => {
+      const { error } = await supabase.from('schedule_types').delete().eq('id', id);
+      if (error) Alert.alert('Erro ao apagar', error.message);
+      else refresh();
+    });
   };
 
   const toggleAssign = async (memberId: string, typeId: string) => {
@@ -135,21 +138,23 @@ export default function Members() {
         <View style={styles.overlay}>
           <View style={styles.sheet}>
             <Text style={styles.sheetTitle}>{modal && 'id' in modal && (modal as any).id ? 'Editar membro' : 'Novo membro'}</Text>
-            <TextInput
-              testID="member-name-input"
-              style={styles.input}
-              placeholder="Nome"
-              placeholderTextColor={colors.textSecondary}
-              value={modal?.kind === 'member' ? modal.name : ''}
-              onChangeText={(t) => setModal((p) => p?.kind === 'member' ? { ...p, name: t } : p)}
-            />
-            <Text style={styles.label}>Cor</Text>
-            <View style={styles.colorRow}>
-              {memberPalette.map((c) => (
-                <TouchableOpacity key={c} onPress={() => setModal((p) => p?.kind === 'member' ? { ...p, color: c } : p)}
-                  style={[styles.colorDot, { backgroundColor: c, borderWidth: modal?.kind === 'member' && modal.color === c ? 3 : 0 }]} />
-              ))}
-            </View>
+            <ScrollView style={{ maxHeight: 500 }} keyboardShouldPersistTaps="handled">
+              <TextInput
+                testID="member-name-input"
+                style={styles.input}
+                placeholder="Nome"
+                placeholderTextColor={colors.textSecondary}
+                value={modal?.kind === 'member' ? modal.name : ''}
+                onChangeText={(t) => setModal((p) => p?.kind === 'member' ? { ...p, name: t } : p)}
+              />
+              <Text style={styles.label}>Cor</Text>
+              <View style={styles.colorRow}>
+                {memberPalette.map((c) => (
+                  <TouchableOpacity key={c} onPress={() => setModal((p) => p?.kind === 'member' ? { ...p, color: c } : p)}
+                    style={[styles.colorDot, { backgroundColor: c }, modal?.kind === 'member' && modal.color === c && styles.colorDotSelected]} />
+                ))}
+              </View>
+            </ScrollView>
             <TouchableOpacity testID="save-member" style={styles.primaryBtn} onPress={saveMember}><Text style={styles.primaryBtnText}>Guardar</Text></TouchableOpacity>
             <TouchableOpacity onPress={() => setModal(null)} style={{ alignItems: 'center', marginTop: 10 }}><Text style={{ color: colors.textSecondary }}>Cancelar</Text></TouchableOpacity>
           </View>
@@ -161,22 +166,24 @@ export default function Members() {
         <View style={styles.overlay}>
           <View style={styles.sheet}>
             <Text style={styles.sheetTitle}>{modal && 'id' in modal && (modal as any).id ? 'Editar tipo' : 'Novo tipo'}</Text>
-            <TextInput testID="type-code-input" style={styles.input} placeholder="Código (ex: INF)" placeholderTextColor={colors.textSecondary} autoCapitalize="characters"
-              value={modal?.kind === 'type' ? modal.code : ''}
-              onChangeText={(t) => setModal((p) => p?.kind === 'type' ? { ...p, code: t.toUpperCase() } : p)} />
-            <TextInput testID="type-name-input" style={styles.input} placeholder="Nome" placeholderTextColor={colors.textSecondary}
-              value={modal?.kind === 'type' ? modal.name : ''}
-              onChangeText={(t) => setModal((p) => p?.kind === 'type' ? { ...p, name: t } : p)} />
-            <TextInput testID="type-desc-input" style={styles.input} placeholder="Descrição (opcional)" placeholderTextColor={colors.textSecondary}
-              value={modal?.kind === 'type' ? modal.description : ''}
-              onChangeText={(t) => setModal((p) => p?.kind === 'type' ? { ...p, description: t } : p)} />
-            <Text style={styles.label}>Cor</Text>
-            <View style={styles.colorRow}>
-              {typePalette.map((c) => (
-                <TouchableOpacity key={c} onPress={() => setModal((p) => p?.kind === 'type' ? { ...p, color: c } : p)}
-                  style={[styles.colorDot, { backgroundColor: c, borderWidth: modal?.kind === 'type' && modal.color === c ? 3 : 0 }]} />
-              ))}
-            </View>
+            <ScrollView style={{ maxHeight: 500 }} keyboardShouldPersistTaps="handled">
+              <TextInput testID="type-code-input" style={styles.input} placeholder="Código (ex: INF)" placeholderTextColor={colors.textSecondary} autoCapitalize="characters"
+                value={modal?.kind === 'type' ? modal.code : ''}
+                onChangeText={(t) => setModal((p) => p?.kind === 'type' ? { ...p, code: t.toUpperCase() } : p)} />
+              <TextInput testID="type-name-input" style={styles.input} placeholder="Nome" placeholderTextColor={colors.textSecondary}
+                value={modal?.kind === 'type' ? modal.name : ''}
+                onChangeText={(t) => setModal((p) => p?.kind === 'type' ? { ...p, name: t } : p)} />
+              <TextInput testID="type-desc-input" style={styles.input} placeholder="Descrição (opcional)" placeholderTextColor={colors.textSecondary}
+                value={modal?.kind === 'type' ? modal.description : ''}
+                onChangeText={(t) => setModal((p) => p?.kind === 'type' ? { ...p, description: t } : p)} />
+              <Text style={styles.label}>Cor</Text>
+              <View style={styles.colorRow}>
+                {typePalette.map((c) => (
+                  <TouchableOpacity key={c} onPress={() => setModal((p) => p?.kind === 'type' ? { ...p, color: c } : p)}
+                    style={[styles.colorDot, { backgroundColor: c }, modal?.kind === 'type' && modal.color === c && styles.colorDotSelected]} />
+                ))}
+              </View>
+            </ScrollView>
             <TouchableOpacity testID="save-type" style={styles.primaryBtn} onPress={saveType}><Text style={styles.primaryBtnText}>Guardar</Text></TouchableOpacity>
             <TouchableOpacity onPress={() => setModal(null)} style={{ alignItems: 'center', marginTop: 10 }}><Text style={{ color: colors.textSecondary }}>Cancelar</Text></TouchableOpacity>
           </View>
@@ -188,21 +195,23 @@ export default function Members() {
         <View style={styles.overlay}>
           <View style={styles.sheet}>
             <Text style={styles.sheetTitle}>Atribuir tipos</Text>
-            {scheduleTypes.length === 0 ? <Text style={styles.faded}>Sem tipos. Cria tipos primeiro.</Text> : scheduleTypes.map((t) => {
-              const assigned = modal?.kind === 'assign' && memberScheduleTypes.some((x) => x.member_id === modal.memberId && x.schedule_type_id === t.id);
-              return (
-                <TouchableOpacity
-                  key={t.id}
-                  testID={`toggle-assign-${t.code}`}
-                  style={[styles.assignRow, { backgroundColor: t.color, opacity: assigned ? 1 : 0.55 }]}
-                  onPress={() => modal?.kind === 'assign' && toggleAssign(modal.memberId, t.id)}
-                >
-                  <Text style={styles.typeCodeBig}>{t.code}</Text>
-                  <Text style={{ flex: 1, fontWeight: '700', color: colors.textPrimary }}>{t.name}</Text>
-                  <Ionicons name={assigned ? 'checkmark-circle' : 'ellipse-outline'} size={22} color={colors.textPrimary} />
-                </TouchableOpacity>
-              );
-            })}
+            <ScrollView style={{ maxHeight: 460 }} keyboardShouldPersistTaps="handled">
+              {scheduleTypes.length === 0 ? <Text style={styles.faded}>Sem tipos. Cria tipos primeiro.</Text> : scheduleTypes.map((t) => {
+                const assigned = modal?.kind === 'assign' && memberScheduleTypes.some((x) => x.member_id === modal.memberId && x.schedule_type_id === t.id);
+                return (
+                  <TouchableOpacity
+                    key={t.id}
+                    testID={`toggle-assign-${t.code}`}
+                    style={[styles.assignRow, { backgroundColor: t.color, opacity: assigned ? 1 : 0.55 }]}
+                    onPress={() => modal?.kind === 'assign' && toggleAssign(modal.memberId, t.id)}
+                  >
+                    <Text style={styles.typeCodeBig}>{t.code}</Text>
+                    <Text style={{ flex: 1, fontWeight: '700', color: colors.textPrimary }}>{t.name}</Text>
+                    <Ionicons name={assigned ? 'checkmark-circle' : 'ellipse-outline'} size={22} color={colors.textPrimary} />
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
             <TouchableOpacity onPress={() => setModal(null)} style={styles.primaryBtn}><Text style={styles.primaryBtnText}>Concluído</Text></TouchableOpacity>
           </View>
         </View>
@@ -236,6 +245,7 @@ const styles = StyleSheet.create({
   label: { fontSize: 12, fontWeight: '800', color: colors.textSecondary, letterSpacing: 1, marginVertical: 8 },
   colorRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: spacing.md },
   colorDot: { width: 34, height: 34, borderRadius: 17, borderColor: colors.textPrimary },
+  colorDotSelected: { borderWidth: 3 },
   primaryBtn: { backgroundColor: colors.brand, paddingVertical: 14, borderRadius: radius.pill, alignItems: 'center', marginTop: 8 },
   primaryBtnText: { color: colors.textInverse, fontWeight: '700', fontSize: 16 },
   assignRow: { flexDirection: 'row', alignItems: 'center', padding: 12, borderRadius: radius.md, marginBottom: 8, gap: 8 },
