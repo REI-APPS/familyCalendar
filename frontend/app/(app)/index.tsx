@@ -7,6 +7,7 @@ import { pt } from 'date-fns/locale';
 import { useFamily } from '../../src/contexts/FamilyContext';
 import { supabase } from '../../src/lib/supabase';
 import { colors, radius, spacing } from '../../src/lib/theme';
+import { SwipeNav } from '../../src/lib/SwipeNav';
 
 export default function Today() {
   const { family, members, scheduleTypes, memberScheduleTypes, entries, createFamilyWithDefaults, refresh } = useFamily();
@@ -112,7 +113,8 @@ export default function Today() {
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: 100 }}>
+      <SwipeNav onPrev={() => setDate(subDays(date, 1))} onNext={() => setDate(addDays(date, 1))}>
+        <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: 100 }}>
         {members.length === 0 ? (
           <Text style={{ color: colors.textSecondary, textAlign: 'center', marginTop: 40 }}>Sem membros. Adiciona membros no separador "Membros".</Text>
         ) : (
@@ -146,6 +148,7 @@ export default function Today() {
           })
         )}
       </ScrollView>
+      </SwipeNav>
 
       <Modal visible={!!editing} transparent animationType="slide" onRequestClose={() => setEditing(null)}>
         <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setEditing(null)}>

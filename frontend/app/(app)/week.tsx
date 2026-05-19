@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Alert, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { addDays, addWeeks, subWeeks, startOfWeek, format, isSameDay, isToday } from 'date-fns';
@@ -7,13 +7,22 @@ import { pt } from 'date-fns/locale';
 import { useFamily } from '../../src/contexts/FamilyContext';
 import { supabase } from '../../src/lib/supabase';
 import { colors, radius, spacing } from '../../src/lib/theme';
+import { SwipeNav } from '../../src/lib/SwipeNav';
 
 export default function WeekView() {
   const { family, members, scheduleTypes, memberScheduleTypes, entries, refresh } = useFamily();
   const [cursor, setCursor] = useState(new Date());
   const [editing, setEditing] = useState<{ memberId: string; date: Date } | null>(null);
+  const { width } = useWindowDimensions();
 
-  const weekStart = useMemo(() => startOfWeek(cursor, { weekStartsOn: 1 }), [cursor]); // Monday
+  // Layout: 7 columns + 1 member column inside available width
+  const MEMBER_W = Math.min(72, width * 0.18);
+  const GAP = 3;
+  const PADDING_H = 12;
+  const CELL_W = Math.max(28, (width - PADDING_H * 2 - MEMBER_W - GAP * 8) / 7);
+  const ROW_H = Math.max(44, Math.min(56, CELL_W + 8));
+
+  const weekStart = useMemo(() => startOfWeek(cursor, { weekStartsOn: 1 }), [cursor]);
   const days = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)), [weekStart]);
 
   const memberTypes = (mid: string) => {
@@ -50,10 +59,13 @@ export default function WeekView() {
     refresh();
   };
 
+  const prevWeek = () => setCursor(subWeeks(cursor, 1));
+  const nextWeek = () => setCursor(addWeeks(cursor, 1));
+
   if (!family) return <SafeAreaView style={styles.safe}><Text style={styles.empty}>Cria primeiro uma família.</Text></SafeAreaView>;
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.header}>
         <View>
           <Text style={styles.tag}>{family.name.toUpperCase()}</Text>
@@ -61,62 +73,62 @@ export default function WeekView() {
           <Text style={styles.sub}>{format(weekStart, "d MMM", { locale: pt })} — {format(addDays(weekStart, 6), "d MMM yyyy", { locale: pt })}</Text>
         </View>
         <View style={{ flexDirection: 'row', gap: 6 }}>
-          <TouchableOpacity testID="prev-week" style={styles.iconBtn} onPress={() => setCursor(subWeeks(cursor, 1))}>
+          <TouchableOpacity testID="prev-week" style={styles.iconBtn} onPress={prevWeek}>
             <Ionicons name="chevron-back" size={20} color={colors.textPrimary} />
           </TouchableOpacity>
           <TouchableOpacity testID="today-week" style={styles.iconBtn} onPress={() => setCursor(new Date())}>
             <Ionicons name="today-outline" size={18} color={colors.textPrimary} />
           </TouchableOpacity>
-          <TouchableOpacity testID="next-week" style={styles.iconBtn} onPress={() => setCursor(addWeeks(cursor, 1))}>
+          <TouchableOpacity testID="next-week" style={styles.iconBtn} onPress={nextWeek}>
             <Ionicons name="chevron-forward" size={20} color={colors.textPrimary} />
           </TouchableOpacity>
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 100 }} horizontal={false}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <View>
-            {/* Days header */}
-            <View style={styles.row}>
-              <View style={[styles.memberHeadCell]} />
-              {days.map((d) => (
-                <View key={d.toISOString()} style={[styles.dayHeadCell, isToday(d) && styles.dayHeadToday]}>
-                  <Text style={styles.dayName}>{format(d, 'EEE', { locale: pt }).slice(0, 3).toUpperCase()}</Text>
-                  <Text style={[styles.dayNum, isToday(d) && { color: colors.brand }]}>{format(d, 'd')}</Text>
-                </View>
-              ))}
-            </View>
-
-            {members.map((m) => (
-              <View key={m.id} style={styles.row}>
-                <View style={[styles.memberHeadCell, { backgroundColor: m.color }]}>
-                  <Text style={styles.memberName}>{m.name}</Text>
-                </View>
-                {days.map((d) => {
-                  const e = entryFor(m.id, d);
-                  const t = e ? scheduleTypes.find((tt) => tt.id === e.schedule_type_id) : null;
-                  return (
-                    <TouchableOpacity
-                      key={d.toISOString()}
-                      testID={`week-cell-${m.id}-${format(d, 'yyyyMMdd')}`}
-                      style={[styles.cell, { backgroundColor: t?.color || colors.surfaceSecondary }, isSameDay(d, new Date()) && styles.cellToday]}
-                      onPress={() => setEditing({ memberId: m.id, date: d })}
-                    >
-                      <Text style={[styles.cellCode, !t && { color: colors.textSecondary, fontWeight: '400' }]}>
-                        {t ? t.code : '+'}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
+      <SwipeNav onPrev={prevWeek} onNext={nextWeek}>
+        <ScrollView contentContainerStyle={{ paddingBottom: 40, paddingHorizontal: PADDING_H }}>
+          {/* Days header */}
+          <View style={[styles.row, { gap: GAP, marginBottom: 6 }]}>
+            <View style={{ width: MEMBER_W }} />
+            {days.map((d) => (
+              <View key={d.toISOString()} style={[styles.dayHeadCell, { width: CELL_W }, isToday(d) && styles.dayHeadToday]}>
+                <Text style={styles.dayName}>{format(d, 'EEEEE', { locale: pt }).toUpperCase()}</Text>
+                <Text style={[styles.dayNum, isToday(d) && { color: colors.brand }]}>{format(d, 'd')}</Text>
               </View>
             ))}
-
-            {members.length === 0 && (
-              <Text style={{ color: colors.textSecondary, padding: 24 }}>Sem membros. Adiciona em "Membros".</Text>
-            )}
           </View>
+
+          {members.map((m) => (
+            <View key={m.id} style={[styles.row, { gap: GAP, marginBottom: GAP }]}>
+              <View style={[styles.memberHeadCell, { width: MEMBER_W, backgroundColor: m.color, height: ROW_H }]}>
+                <Text style={styles.memberName} numberOfLines={1}>{m.name}</Text>
+              </View>
+              {days.map((d) => {
+                const e = entryFor(m.id, d);
+                const t = e ? scheduleTypes.find((tt) => tt.id === e.schedule_type_id) : null;
+                return (
+                  <TouchableOpacity
+                    key={d.toISOString()}
+                    testID={`week-cell-${m.id}-${format(d, 'yyyyMMdd')}`}
+                    style={[styles.cell, { width: CELL_W, height: ROW_H, backgroundColor: t?.color || colors.surfaceSecondary }, isSameDay(d, new Date()) && styles.cellToday]}
+                    onPress={() => setEditing({ memberId: m.id, date: d })}
+                  >
+                    <Text style={[styles.cellCode, !t && { color: colors.textSecondary, fontWeight: '400' }]} numberOfLines={1}>
+                      {t ? t.code : '+'}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          ))}
+
+          {members.length === 0 && (
+            <Text style={{ color: colors.textSecondary, padding: 24 }}>Sem membros. Adiciona em "Membros".</Text>
+          )}
+
+          <Text style={styles.swipeHint}>← desliza para mudar de semana →</Text>
         </ScrollView>
-      </ScrollView>
+      </SwipeNav>
 
       <Modal visible={!!editing} transparent animationType="slide" onRequestClose={() => setEditing(null)}>
         <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setEditing(null)}>
@@ -161,26 +173,25 @@ export default function WeekView() {
   );
 }
 
-const CELL_WIDTH = 64;
-
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   empty: { color: colors.textSecondary, textAlign: 'center', marginTop: 50 },
   header: { padding: spacing.lg, paddingBottom: spacing.sm, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
   tag: { fontSize: 11, color: colors.textSecondary, fontWeight: '800', letterSpacing: 1.2 },
-  title: { fontSize: 32, fontWeight: '800', color: colors.textPrimary, letterSpacing: -0.5 },
-  sub: { fontSize: 13, color: colors.textSecondary, marginTop: 2 },
+  title: { fontSize: 28, fontWeight: '800', color: colors.textPrimary, letterSpacing: -0.5 },
+  sub: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
   iconBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border },
-  row: { flexDirection: 'row', marginBottom: 6, paddingHorizontal: spacing.md },
-  memberHeadCell: { width: 96, padding: 8, justifyContent: 'center', borderRadius: radius.sm, marginRight: 6 },
-  memberName: { fontWeight: '800', color: colors.textPrimary, fontSize: 13 },
-  dayHeadCell: { width: CELL_WIDTH, paddingVertical: 6, alignItems: 'center', borderRadius: radius.sm, marginRight: 4 },
+  row: { flexDirection: 'row' },
+  memberHeadCell: { padding: 6, justifyContent: 'center', borderRadius: radius.sm },
+  memberName: { fontWeight: '800', color: colors.textPrimary, fontSize: 11 },
+  dayHeadCell: { paddingVertical: 4, alignItems: 'center', borderRadius: radius.sm },
   dayHeadToday: { backgroundColor: '#FFE5EC' },
-  dayName: { fontSize: 10, color: colors.textSecondary, fontWeight: '800', letterSpacing: 1 },
-  dayNum: { fontSize: 18, fontWeight: '800', color: colors.textPrimary, marginTop: 2 },
-  cell: { width: CELL_WIDTH, height: 56, borderRadius: radius.sm, marginRight: 4, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'transparent' },
+  dayName: { fontSize: 9, color: colors.textSecondary, fontWeight: '800', letterSpacing: 1 },
+  dayNum: { fontSize: 16, fontWeight: '800', color: colors.textPrimary, marginTop: 2 },
+  cell: { borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'transparent' },
   cellToday: { borderColor: colors.brand, borderWidth: 2 },
-  cellCode: { fontWeight: '800', color: colors.textPrimary, fontSize: 14 },
+  cellCode: { fontWeight: '800', color: colors.textPrimary, fontSize: 11 },
+  swipeHint: { textAlign: 'center', color: colors.textSecondary, fontSize: 11, marginTop: 16, fontStyle: 'italic' },
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   sheet: { backgroundColor: colors.surface, padding: spacing.lg, paddingBottom: spacing.xl + 16, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg },
   sheetTitle: { fontSize: 18, fontWeight: '800', color: colors.textPrimary, textAlign: 'center', textTransform: 'capitalize' },

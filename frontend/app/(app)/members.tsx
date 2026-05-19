@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, Alert, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFamily } from '../../src/contexts/FamilyContext';
@@ -30,9 +30,19 @@ export default function Members() {
 
   const deleteMember = (id: string) => {
     confirmAction('Apagar membro?', 'Esta ação remove o membro e os seus horários.', async () => {
-      const { error } = await supabase.from('members').delete().eq('id', id);
-      if (error) Alert.alert('Erro ao apagar', error.message);
-      else refresh();
+      const { data, error } = await supabase.from('members').delete().eq('id', id).select();
+      if (error) {
+        Alert.alert('Erro ao apagar', error.message);
+        if (Platform.OS === 'web') window.alert('Erro ao apagar: ' + error.message);
+        return;
+      }
+      if (!data || data.length === 0) {
+        const msg = 'Membro não foi apagado. Possivelmente bloqueado por permissão (RLS) ou já não existe.';
+        Alert.alert('Aviso', msg);
+        if (Platform.OS === 'web') window.alert(msg);
+        return;
+      }
+      refresh();
     });
   };
 
@@ -47,9 +57,19 @@ export default function Members() {
 
   const deleteType = (id: string) => {
     confirmAction('Apagar tipo?', 'Esta ação remove o tipo e todos os horários que o usam.', async () => {
-      const { error } = await supabase.from('schedule_types').delete().eq('id', id);
-      if (error) Alert.alert('Erro ao apagar', error.message);
-      else refresh();
+      const { data, error } = await supabase.from('schedule_types').delete().eq('id', id).select();
+      if (error) {
+        Alert.alert('Erro ao apagar', error.message);
+        if (Platform.OS === 'web') window.alert('Erro ao apagar: ' + error.message);
+        return;
+      }
+      if (!data || data.length === 0) {
+        const msg = 'Tipo não foi apagado. Possivelmente bloqueado por permissão (RLS) ou já não existe.';
+        Alert.alert('Aviso', msg);
+        if (Platform.OS === 'web') window.alert(msg);
+        return;
+      }
+      refresh();
     });
   };
 

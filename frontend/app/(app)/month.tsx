@@ -8,6 +8,7 @@ import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { useFamily } from '../../src/contexts/FamilyContext';
 import { colors, radius, spacing } from '../../src/lib/theme';
+import { SwipeNav } from '../../src/lib/SwipeNav';
 
 const WEEKDAYS = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
 
@@ -87,6 +88,7 @@ export default function MonthView() {
         </View>
       </View>
 
+      <SwipeNav onPrev={() => setCursor(subMonths(cursor, 1))} onNext={() => setCursor(addMonths(cursor, 1))}>
       <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
         <View style={styles.weekRow}>
           {WEEKDAYS.map((w, i) => <Text key={i} style={styles.weekday}>{w}</Text>)}
@@ -123,6 +125,7 @@ export default function MonthView() {
           </View>
         </View>
       </ScrollView>
+      </SwipeNav>
     </SafeAreaView>
   );
 }
