@@ -8,7 +8,7 @@ import { useFamily } from '../../src/contexts/FamilyContext';
 import { supabase } from '../../src/lib/supabase';
 import { colors, radius, spacing } from '../../src/lib/theme';
 import { updateAgendaWidget } from '../../src/lib/widgetUpdate';
-import { default as storage } from '../../src/utils/storage';
+import { storage } from '../../src/utils/storage';
 
 const WIDGET_DAY_KEY = 'widget_day_offset';
 const DAY_OPTIONS = [
@@ -27,7 +27,7 @@ export default function Settings() {
   const [widgetDay, setWidgetDay] = useState<number>(0);
 
   useEffect(() => {
-    storage.getItem(WIDGET_DAY_KEY).then((v) => {
+    storage.getItem(WIDGET_DAY_KEY, '0').then((v) => {
       if (v) setWidgetDay(Number(v));
     });
   }, []);
