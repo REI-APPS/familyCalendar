@@ -12,11 +12,11 @@
     "description": "Organiza a rotina da tua família num só lugar. Cria horários por membro, vê o mês completo e sincroniza em tempo real entre todos os dispositivos.",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.familia.agenda",
+      "bundleIdentifier": "com.grouprei.familyCalendar",
       "buildNumber": "1"
     },
     "android": {
-      "package": "com.familia.agenda",
+      "package": "com.grouprei.familyCalendar",
       "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
