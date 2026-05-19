@@ -9,7 +9,7 @@
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "primaryColor": "#FF8FA3",
-    "description": "Organiza a rotina da tua família num só lugar. Cria horários por membro, vê o mês completo e sincroniza em tempo real entre todos os dispositivos.",
+    "description": "Organiza a rotina da tua família num só lugar.",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.grouprei.familyCalendar",
@@ -45,6 +45,25 @@
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#FDFDF9"
+        }
+      ],
+      [
+        "react-native-android-widget",
+        {
+          "widgets": [
+            {
+              "name": "Agenda",
+              "label": "Agenda da Família",
+              "description": "Mostra a agenda da tua família no ecrã principal.",
+              "minWidth": "250dp",
+              "minHeight": "180dp",
+              "targetCellWidth": 4,
+              "targetCellHeight": 3,
+              "previewImage": "./assets/images/icon.png",
+              "updatePeriodMillis": 1800000,
+              "resizeMode": "horizontal|vertical"
+            }
+          ]
         }
       ]
     ],

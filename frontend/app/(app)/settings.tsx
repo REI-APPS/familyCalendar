@@ -1,17 +1,57 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, Share } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { useFamily } from '../../src/contexts/FamilyContext';
 import { supabase } from '../../src/lib/supabase';
 import { colors, radius, spacing } from '../../src/lib/theme';
+import { updateAgendaWidget } from '../../src/lib/widgetUpdate';
+import { default as storage } from '../../src/utils/storage';
+
+const WIDGET_DAY_KEY = 'widget_day_offset';
+const DAY_OPTIONS = [
+  { offset: 0, label: 'Hoje' },
+  { offset: 1, label: 'Amanhã' },
+  { offset: 2, label: 'Depois de amanhã' },
+  { offset: 7, label: 'Daqui a 1 semana' },
+];
 
 export default function Settings() {
   const { user, signOut } = useAuth();
-  const { family, families, selectFamily, refresh } = useFamily();
+  const { family, families, members, scheduleTypes, entries, selectFamily, refresh } = useFamily();
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [sending, setSending] = useState(false);
+  const [widgetDay, setWidgetDay] = useState<number>(0);
+
+  useEffect(() => {
+    storage.getItem(WIDGET_DAY_KEY).then((v) => {
+      if (v) setWidgetDay(Number(v));
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!family) return;
+    updateAgendaWidget({
+      familyName: family.name,
+      members,
+      scheduleTypes,
+      entries,
+      dayOffset: widgetDay,
+    });
+  }, [family, members, scheduleTypes, entries, widgetDay]);
+
+  const onSelectWidgetDay = async (offset: number) => {
+    setWidgetDay(offset);
+    await storage.setItem(WIDGET_DAY_KEY, String(offset));
+  };
+
+  const onSignOut = async () => {
+    await signOut();
+    router.replace('/(auth)/login');
+  };
 
   const sendInvite = async () => {
     if (!family || !email.trim()) return;
@@ -73,12 +113,29 @@ export default function Settings() {
         )}
 
         <View style={styles.card}>
+          <Text style={styles.label}>Widget · dia a mostrar</Text>
+          <Text style={styles.hint}>Escolhe qual o dia que aparece no widget do ecrã principal.</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+            {DAY_OPTIONS.map((d) => (
+              <TouchableOpacity
+                key={d.offset}
+                testID={`widget-day-${d.offset}`}
+                onPress={() => onSelectWidgetDay(d.offset)}
+                style={[styles.pill, { backgroundColor: widgetDay === d.offset ? colors.brand : colors.surfaceSecondary }]}
+              >
+                <Text style={[styles.pillText, { color: widgetDay === d.offset ? '#fff' : colors.textPrimary }]}>{d.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        <View style={styles.card}>
           <Text style={styles.label}>Sobre</Text>
           <Text style={styles.about}>📅 Agenda da Família v1.0</Text>
           <Text style={styles.aboutSub}>Sincronização em tempo real via Supabase. Exporta a vista mensal em PDF na tab Mês.</Text>
         </View>
 
-        <TouchableOpacity testID="sign-out" style={styles.dangerBtn} onPress={signOut}>
+        <TouchableOpacity testID="sign-out" style={styles.dangerBtn} onPress={onSignOut}>
           <Ionicons name="log-out-outline" size={18} color={colors.danger} />
           <Text style={styles.dangerText}>Terminar sessão</Text>
         </TouchableOpacity>
@@ -104,4 +161,6 @@ const styles = StyleSheet.create({
   familyRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 12, borderRadius: radius.md, marginVertical: 2 },
   familyRowActive: { backgroundColor: colors.surfaceSecondary },
   familyName: { fontSize: 15, color: colors.textPrimary, fontWeight: '600' },
+  pill: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: radius.pill },
+  pillText: { fontWeight: '700', fontSize: 13 },
 });
