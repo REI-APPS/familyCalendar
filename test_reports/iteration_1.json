@@ -1,0 +1,49 @@
+{
+  "summary": "Frontend-only testing of Expo/React Native app 'Agenda da Família'. Verified app loads on https://familia-widget.preview.emergentagent.com, login/signup screens render with correct testIDs and theming, navigation between login↔signup works, and the Supabase client (URL + ANON key) is correctly wired (real 400/429 responses from mjsgsywpsfrrejtrlmli.supabase.co). Post-login flow (create-family, today, month, members, settings, sign-out) could NOT be exercised because Supabase signup is blocked: the project has email confirmation enabled and is returning HTTP 429 'over_email_send_rate_limit' on every /auth/v1/signup call (rate limit exhausted by prior attempts). Per task instructions, this is reported as a warning, not a bug.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "(auth)/signup.tsx + (auth)/login.tsx",
+        "issue": "Alert.alert error feedback is not visible on Expo web preview. When Supabase returns an error (e.g. 429 'over_email_send_rate_limit' or 400 invalid credentials), the form stays put and no on-screen toast/banner is shown. Playwright also did NOT receive a 'dialog' event, so window.alert is not triggered by react-native-web in this build. Users get no feedback that login/signup failed on web.",
+        "testID": "login-submit-button / signup-submit-button",
+        "priority": "MEDIUM"
+      }
+    ],
+    "integration_issues": [
+      {
+        "flow": "Signup → confirm email → login",
+        "issue": "Supabase project has email confirmation ENABLED. Every signup attempt returns 429 {\"code\":\"over_email_send_rate_limit\",\"message\":\"email rate limit exceeded\"}. Cannot create a usable test account from anon client. Need either: (a) disable email confirmation in Supabase Auth settings, (b) seed a confirmed test user via service-role key, or (c) wait for rate limit window to clear (and use whitelisted email domains).",
+        "affected_testIDs": ["signup-submit-button", "login-submit-button", "create-family-button"]
+      }
+    ],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Add a visible inline error banner/Text under the form in (auth)/login.tsx and (auth)/signup.tsx that renders the Supabase error message, instead of relying on Alert.alert (which is silent on react-native-web).",
+    "Provide pre-seeded test credentials (write them to /app/memory/test_credentials.md) so the testing agent can run the full post-login flow without going through Supabase signup. Alternatively, disable 'Confirm email' in Supabase Auth → Providers → Email for this preview environment.",
+    "Once credentials are available, retest: create-family-button → family-name-input → create-family-confirm → 3 member cards visible → tap member-card-<id> → select-type-<code> → card color changes → Mês tab (prev-month/next-month/export-pdf) → Membros tab (add-member/add-type/assign-<memberId>) → Ajustes (invite-email-input/send-invite/sign-out).",
+    "Tunnel/preview stability: Expo is launched with --tunnel via ngrok and intermittently returns 502 with 'ngrok tunnel took too long to connect / remote gone away' in /var/log/supervisor/expo.err.log. App eventually serves HTTP 200 but cold start can take 60-90s. Consider serving without tunnel for the web preview if possible."
+  ],
+  "critical_code_review_comments": [
+    "AuthContext.signUp / signIn map only `error.message` to the UI; the login.tsx Alert.alert is silent on web. Move to a stateful error string + <Text style={{color:colors.danger}}> rendered in the card so failures are visible cross-platform.",
+    "FamilyContext.loadFamilies has a `family` value in its useCallback deps, which causes the function identity to change every time a family is selected and re-triggers the loading effect. Use a ref or remove `family` from deps to avoid unnecessary re-fetches.",
+    "supabase.ts: persistSession is enabled but storage is only configured on native (Platform.OS !== 'web'). On web the session falls back to localStorage which is fine, but autoRefreshToken + AppState listener is native-only — OK, but make sure web also keeps the session after reload (verified: reload still on login when not signed in, expected).",
+    "All Text is correctly wrapped in <Text> components; StyleSheet.create is used consistently; testIDs are present on critical interactive elements (good)."
+  ],
+  "updated_files": [],
+  "success_rate": {
+    "backend": "N/A (frontend-only test)",
+    "frontend": "~30% (auth UI verified; post-login flow blocked by Supabase rate limit)"
+  },
+  "seed_data_creation": "None. Could not create a confirmed Supabase user from anon client (rate limited / email confirmation required).",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Before retesting: (1) ensure a confirmed test user exists in Supabase project mjsgsywpsfrrejtrlmli — either disable 'Confirm email' under Auth settings or seed via service-role key, and write the email/password into /app/memory/test_credentials.md. (2) Wait at least 1h for the over_email_send_rate_limit to clear if attempting signup again. (3) Expo tunnel takes 60-90s to come up after restart; poll HTTP 200 on the preview URL before driving the browser. (4) testIDs to use are exactly as in the review_request; they exist in code: login-email-input, login-password-input, login-submit-button, goto-signup, signup-email-input, signup-password-input, signup-submit-button, goto-login, create-family-button, family-name-input, create-family-confirm, member-card-<id>, select-type-<code>, clear-entry, prev-day, next-day, prev-month, next-month, export-pdf, add-member, add-type, assign-<memberId>, invite-email-input, send-invite, sign-out.",
+  "rca_of_issue": "Root cause of blocked end-to-end test: Supabase Auth on project mjsgsywpsfrrejtrlmli has 'Confirm email' enabled (default for new projects). Each signup attempt enqueues a confirmation email, which Supabase rate-limits at the project level (~3-4 per hour for free tier). My signup attempts plus likely prior attempts have exhausted this quota — Supabase returns HTTP 429 with body {\"code\":\"over_email_send_rate_limit\",\"message\":\"email rate limit exceeded\"}. With signup blocked AND email-confirmation required, no account can transition to a confirmed state from the anon client. Reproduction: POST https://mjsgsywpsfrrejtrlmli.supabase.co/auth/v1/signup with any new email → 429. Mitigation: (1) in Supabase Dashboard → Authentication → Providers → Email, toggle off 'Confirm email' for this preview project, OR (2) use the service-role key + supabase.auth.admin.createUser({email, password, email_confirm: true}) from a one-off backend script, OR (3) wait >1h for rate limit reset and retry with @gmail.com / @outlook.com (avoid @example.com which Supabase treats as invalid in some configs)."
+}
