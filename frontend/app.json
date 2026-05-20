@@ -12,11 +12,11 @@
     "description": "Organiza a rotina da tua família num só lugar.",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.grouprei.familycalendar",
+      "bundleIdentifier": "com.grouprei.familyCalendar",
       "buildNumber": "1"
     },
     "android": {
-      "package": "com.grouprei.familycalendar",
+      "package": "com.grouprei.familyCalendar",
       "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
