@@ -2,28 +2,23 @@ import { Platform } from 'react-native';
 import { addDays, format } from 'date-fns';
 
 export type Member = { id: string; name: string; color: string };
-export type ScheduleType = { id: string; code: string; name: string; color: string };
+export type ScheduleType = { id: string; code: string; name: string; description?: string | null; color: string };
 export type ScheduleEntry = { member_id: string; schedule_type_id: string; entry_date: string };
 
-/**
- * Pushes today's (or offset day's) schedule to the Android home-screen widget.
- * No-op on iOS / web. Safe to call any time the app data changes.
- */
 export async function updateAgendaWidget(opts: {
   familyName: string;
   members: Member[];
   scheduleTypes: ScheduleType[];
   entries: ScheduleEntry[];
   dayOffset?: number;
+  transparent?: boolean;
 }) {
   if (Platform.OS !== 'android') return;
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { requestWidgetUpdate } = require('react-native-android-widget');
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { AgendaWidget } = require('../widgets/AgendaWidget');
 
-    const { familyName, members, scheduleTypes, entries, dayOffset = 0 } = opts;
+    const { familyName, members, scheduleTypes, entries, dayOffset = 0, transparent = false } = opts;
     const targetDate = format(addDays(new Date(), dayOffset), 'yyyy-MM-dd');
     const dayEntries = entries.filter((e) => e.entry_date === targetDate);
 
@@ -33,13 +28,12 @@ export async function updateAgendaWidget(opts: {
       return {
         memberName: m.name,
         memberColor: m.color,
-        typeCode: t?.code || '-',
-        typeName: t?.name || 'Sem horário',
+        typeName: t ? (t.description || t.name) : 'Sem horário',
         typeColor: t?.color || '#F5F3EC',
       };
     });
 
-    const payload = { familyName, dayOffset, entries: widgetEntries };
+    const payload = { familyName, dayOffset, entries: widgetEntries, transparent };
 
     await requestWidgetUpdate({
       widgetName: 'Agenda',
@@ -47,6 +41,6 @@ export async function updateAgendaWidget(opts: {
       widgetNotFound: () => {},
     });
   } catch (e) {
-    // Library not available (Expo Go or dev) — ignore silently
+    // Library not available — ignore
   }
 }
