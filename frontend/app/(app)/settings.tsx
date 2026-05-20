@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Switch, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Switch, Alert, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -12,6 +12,7 @@ import { updateAllWidgets } from '../../src/lib/widgetUpdate';
 import { storage } from '../../src/utils/storage';
 import { sendInviteEmail } from '../../src/lib/resend';
 import { setAppLanguage, Lang } from '../../src/i18n';
+import { useConfirm } from '../../src/lib/ConfirmProvider';
 
 const WIDGET_DAY_KEY = 'widget_day_offset';
 const WIDGET_TRANSPARENT_KEY = 'widget_transparent';
@@ -32,6 +33,7 @@ const LANGUAGES: { code: Lang; flag: string }[] = [
 
 export default function Settings() {
   const { t, i18n } = useTranslation();
+  const confirm = useConfirm();
   const { user, signOut } = useAuth();
   const { family, families, members, scheduleTypes, entries, selectFamily, refresh } = useFamily();
   const router = useRouter();
@@ -40,6 +42,9 @@ export default function Settings() {
   const [widgetDay, setWidgetDay] = useState<number>(0);
   const [transparent, setTransparent] = useState<boolean>(false);
   const [lang, setLang] = useState<Lang>((i18n.language || 'en').slice(0, 2) as Lang);
+  const [pwdModal, setPwdModal] = useState(false);
+  const [newPwd, setNewPwd] = useState('');
+  const [pwdBusy, setPwdBusy] = useState(false);
 
   useEffect(() => {
     storage.getItem(WIDGET_DAY_KEY, '0').then((v) => { if (v) setWidgetDay(Number(v)); });
@@ -74,6 +79,40 @@ export default function Settings() {
   const onSignOut = async () => {
     await signOut();
     router.replace('/(auth)/login');
+  };
+
+  const onChangePassword = async () => {
+    if (newPwd.length < 6) { Alert.alert(t('common.error'), t('settings.new_password_min')); return; }
+    setPwdBusy(true);
+    const { error } = await supabase.auth.updateUser({ password: newPwd });
+    setPwdBusy(false);
+    if (error) { Alert.alert(t('common.error'), error.message); return; }
+    setNewPwd('');
+    setPwdModal(false);
+    Alert.alert(t('common.success'), t('settings.password_changed'));
+  };
+
+  const onDeleteAccount = () => {
+    confirm({
+      title: t('settings.delete_account_title'),
+      message: t('settings.delete_account_msg'),
+      confirmLabel: t('settings.delete_account'),
+      cancelLabel: t('common.cancel'),
+      destructive: true,
+      onConfirm: async () => {
+        const { error } = await supabase.rpc('delete_my_account');
+        if (error) {
+          if (error.code === 'PGRST202') {
+            Alert.alert(t('common.error'), 'Executa SUPABASE_DELETE_ACCOUNT.sql no SQL Editor.');
+          } else {
+            Alert.alert(t('common.error'), error.message);
+          }
+          return;
+        }
+        await supabase.auth.signOut();
+        router.replace('/(auth)/login');
+      },
+    });
   };
 
   const sendInvite = async () => {
@@ -175,7 +214,42 @@ export default function Settings() {
           <Ionicons name="log-out-outline" size={18} color={colors.danger} />
           <Text style={styles.dangerText}>{t('settings.sign_out')}</Text>
         </TouchableOpacity>
+
+        <TouchableOpacity testID="change-password" style={[styles.dangerBtn, { borderColor: colors.brand, marginTop: 8 }]} onPress={() => setPwdModal(true)}>
+          <Ionicons name="key-outline" size={18} color={colors.brand} />
+          <Text style={[styles.dangerText, { color: colors.brand }]}>{t('settings.change_password')}</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity testID="delete-account" style={[styles.dangerBtn, { backgroundColor: colors.danger, borderColor: colors.danger, marginTop: 8 }]} onPress={onDeleteAccount}>
+          <Ionicons name="trash-outline" size={18} color="#fff" />
+          <Text style={[styles.dangerText, { color: '#fff' }]}>{t('settings.delete_account')}</Text>
+        </TouchableOpacity>
       </ScrollView>
+
+      {/* Change password modal */}
+      <Modal visible={pwdModal} transparent animationType="slide" onRequestClose={() => setPwdModal(false)}>
+        <View style={styles.pwdOverlay}>
+          <View style={styles.pwdSheet}>
+            <Text style={styles.pwdTitle}>{t('settings.change_password')}</Text>
+            <TextInput
+              testID="new-password-input"
+              value={newPwd}
+              onChangeText={setNewPwd}
+              secureTextEntry
+              placeholder={t('settings.new_password_min')}
+              placeholderTextColor={colors.textSecondary}
+              style={styles.input}
+              autoFocus
+            />
+            <TouchableOpacity style={styles.primaryBtn} onPress={onChangePassword} disabled={pwdBusy}>
+              <Text style={styles.primaryBtnText}>{pwdBusy ? '…' : t('common.save')}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => { setPwdModal(false); setNewPwd(''); }} style={{ alignItems: 'center', marginTop: 8 }}>
+              <Text style={{ color: colors.textSecondary, fontWeight: '600' }}>{t('common.cancel')}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -202,4 +276,7 @@ const styles = StyleSheet.create({
   pillText: { fontWeight: '700', fontSize: 13 },
   langPill: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 10, borderRadius: radius.pill },
   langFlag: { fontSize: 18 },
+  pwdOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+  pwdSheet: { backgroundColor: colors.surface, padding: spacing.lg, paddingBottom: spacing.xl + 16, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg },
+  pwdTitle: { fontSize: 18, fontWeight: '800', color: colors.textPrimary, marginBottom: 12, textAlign: 'center' },
 });

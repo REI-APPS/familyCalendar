@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { useFamily } from '../../src/contexts/FamilyContext';
 import { supabase } from '../../src/lib/supabase';
 import { colors, radius, spacing, memberPalette, typePalette } from '../../src/lib/theme';
-import { confirmAction } from '../../src/lib/confirm';
+import { useConfirm } from '../../src/lib/ConfirmProvider';
 
 type ModalState =
   | { kind: 'member'; id?: string; name: string; color: string }
@@ -16,6 +16,7 @@ type ModalState =
 
 export default function Members() {
   const { t } = useTranslation();
+  const confirm = useConfirm();
   const { family, members, scheduleTypes, memberScheduleTypes, refresh } = useFamily();
   const [modal, setModal] = useState<ModalState>(null);
   const [toast, setToast] = useState<string>('');
@@ -34,10 +35,13 @@ export default function Members() {
   };
 
   const deleteMember = (id: string, name: string) => {
-    confirmAction(
-      t('members.delete_member_title'),
-      t('members.delete_member_msg', { name }),
-      async () => {
+    confirm({
+      title: t('members.delete_member_title'),
+      message: t('members.delete_member_msg', { name }),
+      confirmLabel: t('common.delete'),
+      cancelLabel: t('common.cancel'),
+      destructive: true,
+      onConfirm: async () => {
         console.log('[delete_member] calling RPC with id=', id);
         const { data, error } = await supabase.rpc('delete_member', { member_id_to_delete: id });
         console.log('[delete_member] response:', { data, error });
@@ -53,9 +57,7 @@ export default function Members() {
         showToast(t('members.deleted_success', { name }));
         refresh();
       },
-      t('common.delete'),
-      t('common.cancel')
-    );
+    });
   };
 
   const saveType = async () => {
@@ -68,10 +70,13 @@ export default function Members() {
   };
 
   const deleteType = (id: string, name: string) => {
-    confirmAction(
-      t('members.delete_type_title'),
-      t('members.delete_type_msg', { name }),
-      async () => {
+    confirm({
+      title: t('members.delete_type_title'),
+      message: t('members.delete_type_msg', { name }),
+      confirmLabel: t('common.delete'),
+      cancelLabel: t('common.cancel'),
+      destructive: true,
+      onConfirm: async () => {
         console.log('[delete_schedule_type] calling RPC with id=', id);
         const { data, error } = await supabase.rpc('delete_schedule_type', { type_id_to_delete: id });
         console.log('[delete_schedule_type] response:', { data, error });
@@ -87,9 +92,7 @@ export default function Members() {
         showToast(t('members.deleted_success', { name }));
         refresh();
       },
-      t('common.delete'),
-      t('common.cancel')
-    );
+    });
   };
 
   const toggleAssign = async (memberId: string, typeId: string) => {
