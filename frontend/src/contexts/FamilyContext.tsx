@@ -37,6 +37,16 @@ export function FamilyProvider({ children }: { children: React.ReactNode }) {
     if (!user) {
       setFamilies([]); setFamily(null); setLoading(false); return;
     }
+    // Auto-accept any pending invites for this user's email (idempotent)
+    try {
+      const { data: accepted, error: invErr } = await supabase.rpc('accept_pending_invites');
+      if (invErr) console.warn('accept_pending_invites', invErr.message);
+      else if (accepted && accepted.length > 0) {
+        console.log('[invites] auto-accepted:', accepted);
+      }
+    } catch (e) {
+      console.warn('accept_pending_invites threw', e);
+    }
     const { data, error } = await supabase.from('families').select('*').order('created_at');
     if (error) { console.warn('families', error.message); setFamilies([]); setLoading(false); return; }
     setFamilies(data ?? []);

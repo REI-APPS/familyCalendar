@@ -1,23 +1,34 @@
 import { WidgetTaskHandlerProps } from 'react-native-android-widget';
 import { AgendaWidget } from '../widgets/AgendaWidget';
+import { AgendaWeekWidget } from '../widgets/AgendaWeekWidget';
 
-// Native widget lifecycle handler.
-// Receives widgetAction events from the OS (WIDGET_ADDED, WIDGET_UPDATE, etc.)
-// We render an empty/placeholder until the JS side calls updateAgendaWidget(...).
-const PLACEHOLDER = {
+// Placeholders rendered when widget is first added — JS side updates content after.
+const TODAY_PLACEHOLDER = {
   familyName: 'Agenda da Família',
   dayOffset: 0,
   entries: [],
+  transparent: false,
+};
+
+const WEEK_PLACEHOLDER = {
+  memberNames: [],
+  memberColors: [],
+  weekStart: new Date().toISOString(),
+  matrix: [],
+  transparent: false,
 };
 
 export async function widgetTaskHandler(props: WidgetTaskHandlerProps) {
   const widgetInfo = props.widgetInfo;
-  if (widgetInfo.widgetName !== 'Agenda') return;
   switch (props.widgetAction) {
     case 'WIDGET_ADDED':
     case 'WIDGET_UPDATE':
     case 'WIDGET_RESIZED':
-      props.renderWidget(<AgendaWidget {...PLACEHOLDER} />);
+      if (widgetInfo.widgetName === 'Agenda') {
+        props.renderWidget(<AgendaWidget {...TODAY_PLACEHOLDER} />);
+      } else if (widgetInfo.widgetName === 'AgendaWeek') {
+        props.renderWidget(<AgendaWeekWidget {...WEEK_PLACEHOLDER} />);
+      }
       break;
     case 'WIDGET_DELETED':
       break;

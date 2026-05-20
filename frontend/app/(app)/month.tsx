@@ -3,16 +3,18 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, Alert } fr
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, format, getDay, isSameDay } from 'date-fns';
-import { pt } from 'date-fns/locale';
+import { useTranslation } from 'react-i18next';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { useFamily } from '../../src/contexts/FamilyContext';
 import { colors, radius, spacing } from '../../src/lib/theme';
 import { SwipeNav } from '../../src/lib/SwipeNav';
+import { currentDateLocale } from '../../src/i18n';
 
 const WEEKDAYS = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
 
 export default function MonthView() {
+  const { t } = useTranslation();
   const { family, members, scheduleTypes, entries } = useFamily();
   const [cursor, setCursor] = useState(new Date());
   const [popupDate, setPopupDate] = useState<Date | null>(null);
@@ -37,7 +39,7 @@ export default function MonthView() {
 
   const exportPdf = async () => {
     if (!family) return;
-    const monthLabel = format(cursor, "MMMM 'de' yyyy", { locale: pt });
+    const monthLabel = format(cursor, "MMMM yyyy", { locale: currentDateLocale() });
     const rowsHtml = days.map((d) => {
       const ds = format(d, 'yyyy-MM-dd');
       const cells = members.map((m) => {
@@ -46,7 +48,7 @@ export default function MonthView() {
         const bg = t?.color || '#ffffff';
         return `<td style="background:${bg};padding:6px;text-align:center;font-size:11px;border:1px solid #eee;">${t ? (t.description || t.name) : ''}</td>`;
       }).join('');
-      return `<tr><td style="padding:6px;border:1px solid #eee;font-weight:700;">${format(d, 'dd EEE', { locale: pt })}</td>${cells}</tr>`;
+      return `<tr><td style="padding:6px;border:1px solid #eee;font-weight:700;">${format(d, 'dd EEE', { locale: currentDateLocale() })}</td>${cells}</tr>`;
     }).join('');
     const headers = members.map((m) => `<th style="padding:8px;background:${m.color};border:1px solid #eee;">${m.name}</th>`).join('');
     const html = `<html><head><meta charset="utf-8"><style>body{font-family:-apple-system,Helvetica,Arial,sans-serif;padding:24px;color:#2D3142;}h1{font-size:22px;margin:0 0 4px;}h2{font-size:14px;margin:0 0 16px;color:#7D8299;font-weight:500;}table{width:100%;border-collapse:collapse;}</style></head><body><h1>${family.name}</h1><h2>Agenda · ${monthLabel}</h2><table><thead><tr><th style="padding:8px;background:#F5F3EC;border:1px solid #eee;">Dia</th>${headers}</tr></thead><tbody>${rowsHtml}</tbody></table></body></html>`;
@@ -66,7 +68,7 @@ export default function MonthView() {
       <View style={styles.header}>
         <View>
           <Text style={styles.tag}>{family.name.toUpperCase()}</Text>
-          <Text style={styles.title}>{format(cursor, 'MMMM yyyy', { locale: pt })}</Text>
+          <Text style={styles.title}>{format(cursor, 'MMMM yyyy', { locale: currentDateLocale() })}</Text>
         </View>
         <View style={{ flexDirection: 'row', gap: 6 }}>
           <TouchableOpacity testID="export-pdf" style={[styles.iconBtn, { backgroundColor: colors.brand }]} onPress={exportPdf}>
@@ -111,25 +113,25 @@ export default function MonthView() {
       <Modal visible={!!popupDate} transparent animationType="fade" onRequestClose={() => setPopupDate(null)}>
         <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setPopupDate(null)}>
           <TouchableOpacity activeOpacity={1} style={styles.popup}>
-            <Text style={styles.popupTitle}>{popupDate && format(popupDate, "EEEE, d 'de' MMMM", { locale: pt })}</Text>
+            <Text style={styles.popupTitle}>{popupDate && format(popupDate, "EEEE, d MMMM", { locale: currentDateLocale() })}</Text>
             <ScrollView style={{ maxHeight: 360 }}>
               {popupDate && members.map((m) => {
                 const e = entriesForDay(popupDate).find((x) => x.member_id === m.id);
-                const t = e ? scheduleTypes.find((tt) => tt.id === e.schedule_type_id) : null;
+                const type = e ? scheduleTypes.find((tt) => tt.id === e.schedule_type_id) : null;
                 return (
-                  <View key={m.id} style={[styles.popupRow, { backgroundColor: t?.color || colors.surfaceSecondary }]}>
+                  <View key={m.id} style={[styles.popupRow, { backgroundColor: type?.color || colors.surfaceSecondary }]}>
                     <View style={[styles.popupAvatar, { backgroundColor: m.color }]}>
                       <Text style={styles.popupAvatarTxt}>{m.name[0].toUpperCase()}</Text>
                     </View>
                     <View style={{ flex: 1, marginLeft: 8 }}>
                       <Text style={styles.popupMember}>{m.name}</Text>
-                      <Text style={styles.popupType}>{t ? (t.description || t.name) : 'Sem horário'}</Text>
+                      <Text style={styles.popupType}>{type ? (type.description || type.name) : t('month.no_schedule')}</Text>
                     </View>
                   </View>
                 );
               })}
             </ScrollView>
-            <TouchableOpacity onPress={() => setPopupDate(null)} style={styles.closeBtn}><Text style={styles.closeBtnTxt}>Fechar</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => setPopupDate(null)} style={styles.closeBtn}><Text style={styles.closeBtnTxt}>{t('month.close')}</Text></TouchableOpacity>
           </TouchableOpacity>
         </TouchableOpacity>
       </Modal>

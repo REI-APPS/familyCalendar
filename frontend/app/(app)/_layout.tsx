@@ -1,12 +1,15 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { colors } from '../../src/lib/theme';
 
 export default function AppLayout() {
   const insets = useSafeAreaInsets();
+  const { t, i18n } = useTranslation();
   return (
     <Tabs
+      key={i18n.language}
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: colors.brand,
@@ -25,42 +28,42 @@ export default function AppLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Hoje',
+          title: t('tabs.today'),
           tabBarIcon: ({ color, size }) => <Ionicons name="sunny-outline" size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="week"
         options={{
-          title: 'Semana',
+          title: t('tabs.week'),
           tabBarIcon: ({ color, size }) => <Ionicons name="grid-outline" size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="month"
         options={{
-          title: 'Mês',
+          title: t('tabs.month'),
           tabBarIcon: ({ color, size }) => <Ionicons name="calendar-outline" size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="bulk"
         options={{
-          title: 'Preencher',
+          title: t('tabs.bulk'),
           tabBarIcon: ({ color, size }) => <Ionicons name="flash-outline" size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="members"
         options={{
-          title: 'Membros',
+          title: t('tabs.members'),
           tabBarIcon: ({ color, size }) => <Ionicons name="people-outline" size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="settings"
         options={{
-          title: 'Ajustes',
+          title: t('tabs.settings'),
           tabBarIcon: ({ color, size }) => <Ionicons name="settings-outline" size={size} color={color} />,
         }}
       />

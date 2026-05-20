@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Alert, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link, useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { colors, radius, spacing } from '../../src/lib/theme';
 
 export default function Login() {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [pwd, setPwd] = useState('');
   const [loading, setLoading] = useState(false);
@@ -15,7 +17,7 @@ export default function Login() {
 
   const onSubmit = async () => {
     setErrorMsg('');
-    if (!email || !pwd) { setErrorMsg('Preenche email e palavra-passe'); return; }
+    if (!email || !pwd) { setErrorMsg(t('auth.fill_all')); return; }
     setLoading(true);
     const { error } = await signIn(email.trim(), pwd);
     setLoading(false);
@@ -29,12 +31,12 @@ export default function Login() {
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
           <View style={styles.hero}>
             <Text style={styles.emoji}>🏡</Text>
-            <Text style={styles.title}>Agenda da Família</Text>
-            <Text style={styles.subtitle}>Organiza a rotina de todos num só lugar</Text>
+            <Text style={styles.title}>{t('auth.title')}</Text>
+            <Text style={styles.subtitle}>{t('auth.subtitle')}</Text>
           </View>
 
           <View style={styles.card}>
-            <Text style={styles.label}>Email</Text>
+            <Text style={styles.label}>{t('auth.email')}</Text>
             <TextInput
               testID="login-email-input"
               value={email}
@@ -45,7 +47,7 @@ export default function Login() {
               placeholderTextColor={colors.textSecondary}
               style={styles.input}
             />
-            <Text style={styles.label}>Palavra-passe</Text>
+            <Text style={styles.label}>{t('auth.password')}</Text>
             <TextInput
               testID="login-password-input"
               value={pwd}
@@ -57,12 +59,12 @@ export default function Login() {
             />
             {errorMsg ? <Text testID="login-error" style={styles.errorText}>{errorMsg}</Text> : null}
             <TouchableOpacity testID="login-submit-button" style={styles.primaryBtn} onPress={onSubmit} disabled={loading}>
-              <Text style={styles.primaryBtnText}>{loading ? 'A entrar…' : 'Entrar'}</Text>
+              <Text style={styles.primaryBtnText}>{loading ? t('common.loading') : t('auth.sign_in')}</Text>
             </TouchableOpacity>
 
             <Link href="/(auth)/signup" asChild>
               <TouchableOpacity testID="goto-signup" style={styles.linkBtn}>
-                <Text style={styles.linkText}>Não tens conta? Cria uma família</Text>
+                <Text style={styles.linkText}>{t('auth.no_account')}</Text>
               </TouchableOpacity>
             </Link>
           </View>

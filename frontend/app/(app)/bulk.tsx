@@ -3,31 +3,28 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Alert } fr
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { addDays, eachDayOfInterval, format, addMonths } from 'date-fns';
-import { pt } from 'date-fns/locale';
+import { useTranslation } from 'react-i18next';
+import { currentDateLocale } from '../../src/i18n';
 import { useFamily } from '../../src/contexts/FamilyContext';
 import { supabase } from '../../src/lib/supabase';
 import { colors, radius, spacing } from '../../src/lib/theme';
 
-const WEEKDAYS = [
-  { idx: 1, label: 'Seg' },
-  { idx: 2, label: 'Ter' },
-  { idx: 3, label: 'Qua' },
-  { idx: 4, label: 'Qui' },
-  { idx: 5, label: 'Sex' },
-  { idx: 6, label: 'Sáb' },
-  { idx: 0, label: 'Dom' },
+type RangeOption = { key: '7d' | '14d' | '30d' | '60d' | '90d'; days: number };
+const RANGES: RangeOption[] = [
+  { key: '7d', days: 7 },
+  { key: '14d', days: 14 },
+  { key: '30d', days: 30 },
+  { key: '60d', days: 60 },
+  { key: '90d', days: 90 },
 ];
 
-type RangeOption = { label: string; days: number };
-const RANGES: RangeOption[] = [
-  { label: '7 dias', days: 7 },
-  { label: '14 dias', days: 14 },
-  { label: '30 dias', days: 30 },
-  { label: '60 dias', days: 60 },
-  { label: '90 dias', days: 90 },
+const WEEKDAY_KEYS: { idx: number; key: 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun' }[] = [
+  { idx: 1, key: 'mon' }, { idx: 2, key: 'tue' }, { idx: 3, key: 'wed' },
+  { idx: 4, key: 'thu' }, { idx: 5, key: 'fri' }, { idx: 6, key: 'sat' }, { idx: 0, key: 'sun' },
 ];
 
 export default function BulkFill() {
+  const { t } = useTranslation();
   const { family, members, scheduleTypes, memberScheduleTypes, entries, refresh } = useFamily();
   const [memberId, setMemberId] = useState<string | null>(null);
   const [typeId, setTypeId] = useState<string | null>(null);
@@ -79,15 +76,15 @@ export default function BulkFill() {
       }
       if (rows.length > 0) {
         const { error } = await supabase.from('schedule_entries').insert(rows);
-        if (error) { Alert.alert('Erro', error.message); setBusy(false); return; }
+        if (error) { Alert.alert(t('common.error'), error.message); setBusy(false); return; }
       }
       setBusy(false);
       setConfirmOpen(false);
-      Alert.alert('Sucesso', `${rows.length} dias preenchidos.`);
+      Alert.alert(t('common.success'), t('bulk.success', { count: rows.length }));
       refresh();
     } catch (e: any) {
       setBusy(false);
-      Alert.alert('Erro', e?.message ?? 'Falha');
+      Alert.alert(t('common.error'), e?.message ?? 'Falha');
     }
   };
 
@@ -96,10 +93,10 @@ export default function BulkFill() {
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: 120 }}>
-        <Text style={styles.title}>Preenchimento Rápido</Text>
-        <Text style={styles.sub}>Aplica um tipo a vários dias de uma só vez</Text>
+        <Text style={styles.title}>{t('bulk.title')}</Text>
+        <Text style={styles.sub}>{t('bulk.subtitle')}</Text>
 
-        <Text style={styles.section}>1 · MEMBRO</Text>
+        <Text style={styles.section}>{t('bulk.step_member')}</Text>
         <View style={styles.rowWrap}>
           {members.map((m) => (
             <TouchableOpacity
@@ -113,25 +110,25 @@ export default function BulkFill() {
           ))}
         </View>
 
-        <Text style={styles.section}>2 · TIPO</Text>
-        {!memberId ? <Text style={styles.faded}>Escolhe primeiro um membro</Text> : memberTypes.length === 0 ? (
-          <Text style={styles.faded}>Este membro não tem tipos atribuídos</Text>
+        <Text style={styles.section}>{t('bulk.step_type')}</Text>
+        {!memberId ? <Text style={styles.faded}>{t('bulk.pick_member_first')}</Text> : memberTypes.length === 0 ? (
+          <Text style={styles.faded}>{t('bulk.no_types_for_member')}</Text>
         ) : (
           <View style={styles.rowWrap}>
-            {memberTypes.map((t) => (
+            {memberTypes.map((st) => (
               <TouchableOpacity
-                key={t.id}
-                testID={`bulk-type-${t.code}`}
-                style={[styles.pill, { backgroundColor: t.color, opacity: typeId === t.id ? 1 : 0.55 }, typeId === t.id && styles.pillSelected]}
-                onPress={() => setTypeId(t.id)}
+                key={st.id}
+                testID={`bulk-type-${st.code}`}
+                style={[styles.pill, { backgroundColor: st.color, opacity: typeId === st.id ? 1 : 0.55 }, typeId === st.id && styles.pillSelected]}
+                onPress={() => setTypeId(st.id)}
               >
-                <Text style={styles.pillText}>{t.name}</Text>
+                <Text style={styles.pillText}>{st.name}</Text>
               </TouchableOpacity>
             ))}
           </View>
         )}
 
-        <Text style={styles.section}>3 · INÍCIO</Text>
+        <Text style={styles.section}>{t('bulk.step_start')}</Text>
         <View style={styles.dateBar}>
           <TouchableOpacity testID="start-prev-month" style={styles.iconSmall} onPress={() => setStartDate((d) => addMonths(d, -1))}>
             <Ionicons name="chevron-back" size={18} color={colors.textPrimary} />
@@ -139,7 +136,7 @@ export default function BulkFill() {
           <TouchableOpacity testID="start-prev-day" style={styles.iconSmall} onPress={() => setStartDate((d) => addDays(d, -1))}>
             <Ionicons name="remove" size={16} color={colors.textPrimary} />
           </TouchableOpacity>
-          <Text style={styles.dateText}>{format(startDate, "d 'de' MMMM yyyy", { locale: pt })}</Text>
+          <Text style={styles.dateText}>{format(startDate, "d MMMM yyyy", { locale: currentDateLocale() })}</Text>
           <TouchableOpacity testID="start-next-day" style={styles.iconSmall} onPress={() => setStartDate((d) => addDays(d, 1))}>
             <Ionicons name="add" size={16} color={colors.textPrimary} />
           </TouchableOpacity>
@@ -148,10 +145,10 @@ export default function BulkFill() {
           </TouchableOpacity>
         </View>
         <TouchableOpacity onPress={() => setStartDate(new Date())} style={{ alignItems: 'center', marginTop: 4 }}>
-          <Text style={{ color: colors.brand, fontWeight: '600', fontSize: 12 }}>Voltar a hoje</Text>
+          <Text style={{ color: colors.brand, fontWeight: '600', fontSize: 12 }}>{t('bulk.back_to_today')}</Text>
         </TouchableOpacity>
 
-        <Text style={styles.section}>4 · DURAÇÃO</Text>
+        <Text style={styles.section}>{t('bulk.step_duration')}</Text>
         <View style={styles.rowWrap}>
           {RANGES.map((r) => (
             <TouchableOpacity
@@ -160,14 +157,14 @@ export default function BulkFill() {
               style={[styles.pill, { backgroundColor: rangeDays === r.days ? colors.brand : colors.surfaceSecondary }]}
               onPress={() => setRangeDays(r.days)}
             >
-              <Text style={[styles.pillText, { color: rangeDays === r.days ? '#fff' : colors.textPrimary }]}>{r.label}</Text>
+              <Text style={[styles.pillText, { color: rangeDays === r.days ? '#fff' : colors.textPrimary }]}>{t(`bulk.ranges.${r.key}`)}</Text>
             </TouchableOpacity>
           ))}
         </View>
 
-        <Text style={styles.section}>5 · DIAS DA SEMANA</Text>
+        <Text style={styles.section}>{t('bulk.step_weekdays')}</Text>
         <View style={styles.rowWrap}>
-          {WEEKDAYS.map((w) => {
+          {WEEKDAY_KEYS.map((w) => {
             const sel = weekdays.includes(w.idx);
             return (
               <TouchableOpacity
@@ -176,36 +173,36 @@ export default function BulkFill() {
                 style={[styles.dayPill, { backgroundColor: sel ? colors.textPrimary : colors.surfaceSecondary }]}
                 onPress={() => toggleWeekday(w.idx)}
               >
-                <Text style={{ color: sel ? '#fff' : colors.textPrimary, fontWeight: '800' }}>{w.label}</Text>
+                <Text style={{ color: sel ? '#fff' : colors.textPrimary, fontWeight: '800' }}>{t(`bulk.weekdays_short.${w.key}`)}</Text>
               </TouchableOpacity>
             );
           })}
         </View>
         <View style={{ flexDirection: 'row', gap: 6, marginTop: 6 }}>
           <TouchableOpacity testID="bulk-weekdays-mf" style={styles.miniBtn} onPress={() => setWeekdays([1, 2, 3, 4, 5])}>
-            <Text style={styles.miniBtnText}>Seg–Sex</Text>
+            <Text style={styles.miniBtnText}>{t('bulk.presets.weekdays')}</Text>
           </TouchableOpacity>
           <TouchableOpacity testID="bulk-weekdays-all" style={styles.miniBtn} onPress={() => setWeekdays([0, 1, 2, 3, 4, 5, 6])}>
-            <Text style={styles.miniBtnText}>Todos</Text>
+            <Text style={styles.miniBtnText}>{t('bulk.presets.all')}</Text>
           </TouchableOpacity>
           <TouchableOpacity testID="bulk-weekdays-wknd" style={styles.miniBtn} onPress={() => setWeekdays([0, 6])}>
-            <Text style={styles.miniBtnText}>Fim-de-semana</Text>
+            <Text style={styles.miniBtnText}>{t('bulk.presets.weekend')}</Text>
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.section}>6 · SUBSTITUIR EXISTENTES?</Text>
+        <Text style={styles.section}>{t('bulk.step_overwrite')}</Text>
         <View style={{ flexDirection: 'row', gap: 6 }}>
           <TouchableOpacity testID="bulk-overwrite-yes" style={[styles.pill, { backgroundColor: overwrite ? colors.brand : colors.surfaceSecondary }]} onPress={() => setOverwrite(true)}>
-            <Text style={[styles.pillText, { color: overwrite ? '#fff' : colors.textPrimary }]}>Sim, substituir</Text>
+            <Text style={[styles.pillText, { color: overwrite ? '#fff' : colors.textPrimary }]}>{t('bulk.yes_overwrite')}</Text>
           </TouchableOpacity>
           <TouchableOpacity testID="bulk-overwrite-no" style={[styles.pill, { backgroundColor: !overwrite ? colors.brand : colors.surfaceSecondary }]} onPress={() => setOverwrite(false)}>
-            <Text style={[styles.pillText, { color: !overwrite ? '#fff' : colors.textPrimary }]}>Não, manter</Text>
+            <Text style={[styles.pillText, { color: !overwrite ? '#fff' : colors.textPrimary }]}>{t('bulk.no_keep')}</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.summary}>
-          <Text style={styles.summaryLabel}>VAI PREENCHER</Text>
-          <Text style={styles.summaryValue}>{datesToFill.length} dias</Text>
+          <Text style={styles.summaryLabel}>{t('bulk.will_fill')}</Text>
+          <Text style={styles.summaryValue}>{t('bulk.days_count', { count: datesToFill.length })}</Text>
         </View>
 
         <TouchableOpacity
@@ -215,24 +212,28 @@ export default function BulkFill() {
           onPress={() => setConfirmOpen(true)}
         >
           <Ionicons name="checkmark-done" size={20} color="#fff" />
-          <Text style={styles.applyText}>Aplicar</Text>
+          <Text style={styles.applyText}>{t('bulk.apply')}</Text>
         </TouchableOpacity>
       </ScrollView>
 
       <Modal visible={confirmOpen} transparent animationType="fade" onRequestClose={() => setConfirmOpen(false)}>
         <View style={styles.overlay}>
           <View style={styles.confirmCard}>
-            <Text style={styles.confirmTitle}>Confirmar</Text>
+            <Text style={styles.confirmTitle}>{t('common.confirm')}</Text>
             <Text style={styles.confirmBody}>
-              Vais preencher {datesToFill.length} dias para {members.find((m) => m.id === memberId)?.name} com o tipo {scheduleTypes.find((t) => t.id === typeId)?.name}.
-              {overwrite ? ' Os dias já preenchidos serão substituídos.' : ' Os dias já preenchidos serão mantidos.'}
+              {t('bulk.confirm_msg', {
+                count: datesToFill.length,
+                member: members.find((m) => m.id === memberId)?.name ?? '',
+                type: scheduleTypes.find((st) => st.id === typeId)?.name ?? '',
+                action: overwrite ? t('bulk.overwrite_action') : t('bulk.keep_action'),
+              })}
             </Text>
             <View style={{ flexDirection: 'row', gap: 8, marginTop: spacing.md }}>
               <TouchableOpacity style={[styles.btnGhost, { flex: 1 }]} onPress={() => setConfirmOpen(false)}>
-                <Text style={{ color: colors.textPrimary, fontWeight: '700' }}>Cancelar</Text>
+                <Text style={{ color: colors.textPrimary, fontWeight: '700' }}>{t('common.cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity testID="bulk-confirm" style={[styles.applyBtn, { flex: 1, marginTop: 0 }]} disabled={busy} onPress={apply}>
-                <Text style={styles.applyText}>{busy ? 'A preencher…' : 'Confirmar'}</Text>
+                <Text style={styles.applyText}>{busy ? t('bulk.filling') : t('common.confirm')}</Text>
               </TouchableOpacity>
             </View>
           </View>

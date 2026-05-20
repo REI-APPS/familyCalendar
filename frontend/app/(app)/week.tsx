@@ -3,13 +3,15 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Alert, use
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { addDays, addWeeks, subWeeks, startOfWeek, format, isSameDay, isToday } from 'date-fns';
-import { pt } from 'date-fns/locale';
+import { useTranslation } from 'react-i18next';
+import { currentDateLocale } from '../../src/i18n';
 import { useFamily } from '../../src/contexts/FamilyContext';
 import { supabase } from '../../src/lib/supabase';
 import { colors, radius, spacing } from '../../src/lib/theme';
 import { SwipeNav } from '../../src/lib/SwipeNav';
 
 export default function WeekView() {
+  const { t } = useTranslation();
   const { family, members, scheduleTypes, memberScheduleTypes, entries, refresh } = useFamily();
   const [cursor, setCursor] = useState(new Date());
   const [editing, setEditing] = useState<{ memberId: string; date: Date } | null>(null);
@@ -62,15 +64,15 @@ export default function WeekView() {
   const prevWeek = () => setCursor(subWeeks(cursor, 1));
   const nextWeek = () => setCursor(addWeeks(cursor, 1));
 
-  if (!family) return <SafeAreaView style={styles.safe}><Text style={styles.empty}>Cria primeiro uma família.</Text></SafeAreaView>;
+  if (!family) return <SafeAreaView style={styles.safe}><Text style={styles.empty}>{t('month.create_family_first')}</Text></SafeAreaView>;
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.header}>
         <View>
           <Text style={styles.tag}>{family.name.toUpperCase()}</Text>
-          <Text style={styles.title}>Semana</Text>
-          <Text style={styles.sub}>{format(weekStart, "d MMM", { locale: pt })} — {format(addDays(weekStart, 6), "d MMM yyyy", { locale: pt })}</Text>
+          <Text style={styles.title}>{t('week.title')}</Text>
+          <Text style={styles.sub}>{format(weekStart, "d MMM", { locale: currentDateLocale() })} — {format(addDays(weekStart, 6), "d MMM yyyy", { locale: currentDateLocale() })}</Text>
         </View>
         <View style={{ flexDirection: 'row', gap: 6 }}>
           <TouchableOpacity testID="prev-week" style={styles.iconBtn} onPress={prevWeek}>
@@ -92,7 +94,7 @@ export default function WeekView() {
             <View style={{ width: MEMBER_W }} />
             {days.map((d) => (
               <View key={d.toISOString()} style={[styles.dayHeadCell, { width: CELL_W }, isToday(d) && styles.dayHeadToday]}>
-                <Text style={styles.dayName}>{format(d, 'EEEEE', { locale: pt }).toUpperCase()}</Text>
+                <Text style={styles.dayName}>{format(d, 'EEEEE', { locale: currentDateLocale() }).toUpperCase()}</Text>
                 <Text style={[styles.dayNum, isToday(d) && { color: colors.brand }]}>{format(d, 'd')}</Text>
               </View>
             ))}
@@ -134,7 +136,7 @@ export default function WeekView() {
         <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setEditing(null)}>
           <TouchableOpacity activeOpacity={1} style={styles.sheet}>
             <Text style={styles.sheetTitle}>
-              {editing && format(editing.date, "EEEE, d 'de' MMM", { locale: pt })}
+              {editing && format(editing.date, "EEEE, d MMM", { locale: currentDateLocale() })}
             </Text>
             <Text style={styles.sheetSub}>
               {editing && members.find((m) => m.id === editing.memberId)?.name}
