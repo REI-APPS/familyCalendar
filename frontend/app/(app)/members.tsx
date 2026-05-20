@@ -42,7 +42,7 @@ export default function Members() {
         const { data, error } = await supabase.from('members').delete().eq('id', id).select();
         if (error) { showToast('Erro: ' + error.message); return; }
         if (!data || data.length === 0) {
-          showToast('Bloqueado pelo Supabase (RLS). Executa SUPABASE_FIX_DELETE.sql no SQL Editor.');
+          showToast('Bloqueado pelo Supabase (RLS). Executa SUPABASE_FIX_DELETE_V2.sql no SQL Editor.');
           return;
         }
         showToast(`"${name}" apagado.`);
@@ -108,7 +108,7 @@ export default function Members() {
                 <TouchableOpacity testID={`assign-${m.id}`} onPress={() => setModal({ kind: 'assign', memberId: m.id })} style={styles.smallBtn}>
                   <Ionicons name="link-outline" size={16} color={colors.textPrimary} />
                 </TouchableOpacity>
-                <TouchableOpacity testID={`delete-member-${m.id}`} onPress={() => deleteMember(m.id)} style={styles.smallBtn}>
+                <TouchableOpacity testID={`delete-member-${m.id}`} onPress={() => deleteMember(m.id, m.name)} style={styles.smallBtn}>
                   <Ionicons name="trash-outline" size={16} color={colors.danger} />
                 </TouchableOpacity>
               </TouchableOpacity>
@@ -142,7 +142,7 @@ export default function Members() {
                 <Text style={styles.cardTitle}>{t.name}</Text>
                 {t.description ? <Text style={styles.cardSub}>{t.description}</Text> : null}
               </View>
-              <TouchableOpacity testID={`delete-type-${t.code}`} onPress={() => deleteType(t.id)} style={styles.smallBtn}>
+              <TouchableOpacity testID={`delete-type-${t.code}`} onPress={() => deleteType(t.id, t.name)} style={styles.smallBtn}>
                 <Ionicons name="trash-outline" size={16} color={colors.danger} />
               </TouchableOpacity>
             </View>
