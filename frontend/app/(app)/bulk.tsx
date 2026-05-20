@@ -125,7 +125,7 @@ export default function BulkFill() {
                 style={[styles.pill, { backgroundColor: t.color, opacity: typeId === t.id ? 1 : 0.55 }, typeId === t.id && styles.pillSelected]}
                 onPress={() => setTypeId(t.id)}
               >
-                <Text style={styles.pillText}>{t.code} · {t.name}</Text>
+                <Text style={styles.pillText}>{t.name}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -224,7 +224,7 @@ export default function BulkFill() {
           <View style={styles.confirmCard}>
             <Text style={styles.confirmTitle}>Confirmar</Text>
             <Text style={styles.confirmBody}>
-              Vais preencher {datesToFill.length} dias para {members.find((m) => m.id === memberId)?.name} com o tipo {scheduleTypes.find((t) => t.id === typeId)?.code}.
+              Vais preencher {datesToFill.length} dias para {members.find((m) => m.id === memberId)?.name} com o tipo {scheduleTypes.find((t) => t.id === typeId)?.name}.
               {overwrite ? ' Os dias já preenchidos serão substituídos.' : ' Os dias já preenchidos serão mantidos.'}
             </Text>
             <View style={{ flexDirection: 'row', gap: 8, marginTop: spacing.md }}>

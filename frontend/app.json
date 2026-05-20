@@ -12,11 +12,11 @@
     "description": "Organiza a rotina da tua família num só lugar.",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.grouprei.familyCalendar",
+      "bundleIdentifier": "com.grouprei.familycalendar",
       "buildNumber": "1"
     },
     "android": {
-      "package": "com.grouprei.familyCalendar",
+      "package": "com.grouprei.familycalendar",
       "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
@@ -58,13 +58,13 @@
               "name": "Agenda",
               "label": "Agenda da Família",
               "description": "Mostra a agenda da tua família no ecrã principal.",
-              "minWidth": "250dp",
-              "minHeight": "180dp",
+              "minWidth": "180dp",
+              "minHeight": "40dp",
               "targetCellWidth": 4,
-              "targetCellHeight": 3,
+              "targetCellHeight": 1,
               "previewImage": "./assets/images/icon.png",
               "updatePeriodMillis": 1800000,
-              "resizeMode": "horizontal|vertical"
+              "resizeMode": "horizontal"
             }
           ]
         }
