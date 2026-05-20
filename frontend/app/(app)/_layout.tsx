@@ -6,9 +6,10 @@ import { colors } from '../../src/lib/theme';
 
 export default function AppLayout() {
   const insets = useSafeAreaInsets();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   return (
     <Tabs
+      key={i18n.language}
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: colors.brand,

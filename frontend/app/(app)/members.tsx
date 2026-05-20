@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, Alert, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useFamily } from '../../src/contexts/FamilyContext';
 import { supabase } from '../../src/lib/supabase';
 import { colors, radius, spacing, memberPalette, typePalette } from '../../src/lib/theme';
@@ -14,18 +15,19 @@ type ModalState =
   | null;
 
 export default function Members() {
+  const { t } = useTranslation();
   const { family, members, scheduleTypes, memberScheduleTypes, refresh } = useFamily();
   const [modal, setModal] = useState<ModalState>(null);
   const [toast, setToast] = useState<string>('');
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3500); };
 
-  if (!family) return <SafeAreaView style={styles.safe}><Text style={styles.empty}>Cria primeiro uma família.</Text></SafeAreaView>;
+  if (!family) return <SafeAreaView style={styles.safe}><Text style={styles.empty}>{t('month.create_family_first')}</Text></SafeAreaView>;
 
   const saveMember = async () => {
     if (modal?.kind !== 'member') return;
     const { id, name, color } = modal;
-    if (!name.trim()) { showToast('Nome obrigatório'); return; }
+    if (!name.trim()) { showToast(t('members.name_required')); return; }
     if (id) await supabase.from('members').update({ name, color }).eq('id', id);
     else await supabase.from('members').insert({ family_id: family.id, name, color });
     setModal(null); refresh();
@@ -33,31 +35,33 @@ export default function Members() {
 
   const deleteMember = (id: string, name: string) => {
     confirmAction(
-      'Apagar membro?',
-      `Vais apagar "${name}" e todos os horários atribuídos a este membro.`,
+      t('members.delete_member_title'),
+      t('members.delete_member_msg', { name }),
       async () => {
         console.log('[delete_member] calling RPC with id=', id);
         const { data, error } = await supabase.rpc('delete_member', { member_id_to_delete: id });
         console.log('[delete_member] response:', { data, error });
         if (error) {
           const msg = error.message || JSON.stringify(error);
-          Alert.alert('Erro a apagar', `${msg}\n\nCódigo: ${error.code ?? '-'}\nDica: confirma que executaste SUPABASE_FIX_DELETE_V5.sql.`);
+          Alert.alert(t('members.delete_error_generic'), `${msg}\n\nCódigo: ${error.code ?? '-'}`);
           return;
         }
         if (data === false) {
-          Alert.alert('Não foi apagado', 'A função correu mas não apagou nenhuma linha.');
+          Alert.alert(t('members.delete_not_done'), t('members.delete_not_done_msg'));
           return;
         }
-        showToast(`"${name}" apagado.`);
+        showToast(t('members.deleted_success', { name }));
         refresh();
-      }
+      },
+      t('common.delete'),
+      t('common.cancel')
     );
   };
 
   const saveType = async () => {
     if (modal?.kind !== 'type') return;
     const { id, code, name, description, color } = modal;
-    if (!code.trim() || !name.trim()) { showToast('Código e nome obrigatórios'); return; }
+    if (!code.trim() || !name.trim()) { showToast(t('members.code_name_required')); return; }
     if (id) await supabase.from('schedule_types').update({ code: code.toUpperCase(), name, description, color }).eq('id', id);
     else await supabase.from('schedule_types').insert({ family_id: family.id, code: code.toUpperCase(), name, description, color });
     setModal(null); refresh();
@@ -65,24 +69,26 @@ export default function Members() {
 
   const deleteType = (id: string, name: string) => {
     confirmAction(
-      'Apagar tipo?',
-      `Vais apagar "${name}" e todos os horários que o usam.`,
+      t('members.delete_type_title'),
+      t('members.delete_type_msg', { name }),
       async () => {
         console.log('[delete_schedule_type] calling RPC with id=', id);
         const { data, error } = await supabase.rpc('delete_schedule_type', { type_id_to_delete: id });
         console.log('[delete_schedule_type] response:', { data, error });
         if (error) {
           const msg = error.message || JSON.stringify(error);
-          Alert.alert('Erro a apagar', `${msg}\n\nCódigo: ${error.code ?? '-'}`);
+          Alert.alert(t('members.delete_error_generic'), `${msg}\n\nCódigo: ${error.code ?? '-'}`);
           return;
         }
         if (data === false) {
-          Alert.alert('Não foi apagado', 'A função correu mas não apagou nenhuma linha.');
+          Alert.alert(t('members.delete_not_done'), t('members.delete_not_done_msg'));
           return;
         }
-        showToast(`"${name}" apagado.`);
+        showToast(t('members.deleted_success', { name }));
         refresh();
-      }
+      },
+      t('common.delete'),
+      t('common.cancel')
     );
   };
 
@@ -101,49 +107,47 @@ export default function Members() {
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: 100 }}>
-        <Text style={styles.section}>MEMBROS</Text>
+        <Text style={styles.section}>{t('members.title_members')}</Text>
 
         {members.map((m) => {
           const types = memberAssignedTypes(m.id);
           return (
             <View key={m.id} style={styles.card}>
-              <Pressable
-                testID={`member-row-${m.id}`}
-                style={styles.cardHead}
-                onPress={() => setModal({ kind: 'member', id: m.id, name: m.name, color: m.color })}
-              >
-                <View style={[styles.avatar, { backgroundColor: m.color }]}>
-                  <Text style={styles.avatarText}>{m.name[0].toUpperCase()}</Text>
-                </View>
-                <Text style={styles.cardTitle}>{m.name}</Text>
+              <View style={styles.cardHead}>
+                {/* Pressable só na zona avatar+nome (NÃO inclui botões) */}
+                <Pressable
+                  testID={`member-row-${m.id}`}
+                  style={styles.cardHeadLeft}
+                  onPress={() => setModal({ kind: 'member', id: m.id, name: m.name, color: m.color })}
+                >
+                  <View style={[styles.avatar, { backgroundColor: m.color }]}>
+                    <Text style={styles.avatarText}>{m.name[0].toUpperCase()}</Text>
+                  </View>
+                  <Text style={styles.cardTitle}>{m.name}</Text>
+                </Pressable>
+                {/* Botões como siblings, fora do Pressable */}
                 <TouchableOpacity
                   testID={`assign-${m.id}`}
-                  onPress={(e) => {
-                    e.stopPropagation();
-                    setModal({ kind: 'assign', memberId: m.id });
-                  }}
+                  onPress={() => setModal({ kind: 'assign', memberId: m.id })}
                   style={styles.smallBtn}
                 >
                   <Ionicons name="link-outline" size={16} color={colors.textPrimary} />
                 </TouchableOpacity>
                 <TouchableOpacity
                   testID={`delete-member-${m.id}`}
-                  onPress={(e) => {
-                    e.stopPropagation();
-                    deleteMember(m.id, m.name);
-                  }}
+                  onPress={() => deleteMember(m.id, m.name)}
                   style={styles.smallBtn}
                 >
                   <Ionicons name="trash-outline" size={16} color={colors.danger} />
                 </TouchableOpacity>
-              </Pressable>
+              </View>
               <View style={styles.tagRow}>
                 {types.length === 0 ? (
-                  <Text style={styles.faded}>Sem tipos atribuídos</Text>
+                  <Text style={styles.faded}>{t('members.no_types_assigned')}</Text>
                 ) : (
-                  types.map((t) => (
-                    <View key={t.id} style={[styles.tag, { backgroundColor: t.color }]}>
-                      <Text style={styles.tagText}>{t.code}</Text>
+                  types.map((tt) => (
+                    <View key={tt.id} style={[styles.tag, { backgroundColor: tt.color }]}>
+                      <Text style={styles.tagText}>{tt.code}</Text>
                     </View>
                   ))
                 )}
@@ -158,36 +162,36 @@ export default function Members() {
           onPress={() => setModal({ kind: 'member', name: '', color: memberPalette[members.length % memberPalette.length] })}
         >
           <Ionicons name="add" size={20} color={colors.brand} />
-          <Text style={styles.addText}>Novo membro</Text>
+          <Text style={styles.addText}>{t('members.new_member')}</Text>
         </TouchableOpacity>
 
-        <Text style={[styles.section, { marginTop: spacing.xl }]}>TIPOS DE HORÁRIO</Text>
+        <Text style={[styles.section, { marginTop: spacing.xl }]}>{t('members.title_types')}</Text>
 
-        {scheduleTypes.map((t) => (
-          <Pressable
-            key={t.id}
-            testID={`type-row-${t.code}`}
-            style={[styles.card, { backgroundColor: t.color }]}
-            onPress={() => setModal({ kind: 'type', id: t.id, code: t.code, name: t.name, description: t.description || '', color: t.color })}
-          >
+        {scheduleTypes.map((tt) => (
+          <View key={tt.id} style={[styles.card, { backgroundColor: tt.color }]}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-              <Text style={styles.typeCodeBig}>{t.code}</Text>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.cardTitle}>{t.name}</Text>
-                {t.description ? <Text style={styles.cardSub}>{t.description}</Text> : null}
-              </View>
+              {/* Pressable só na zona código+nome+descrição (não inclui o botão) */}
+              <Pressable
+                testID={`type-row-${tt.code}`}
+                style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 }}
+                onPress={() => setModal({ kind: 'type', id: tt.id, code: tt.code, name: tt.name, description: tt.description || '', color: tt.color })}
+              >
+                <Text style={styles.typeCodeBig}>{tt.code}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.cardTitle}>{tt.name}</Text>
+                  {tt.description ? <Text style={styles.cardSub}>{tt.description}</Text> : null}
+                </View>
+              </Pressable>
+              {/* Delete button como sibling, FORA do Pressable */}
               <TouchableOpacity
-                testID={`delete-type-${t.code}`}
-                onPress={(e) => {
-                  e.stopPropagation();
-                  deleteType(t.id, t.name);
-                }}
+                testID={`delete-type-${tt.code}`}
+                onPress={() => deleteType(tt.id, tt.name)}
                 style={styles.smallBtn}
               >
                 <Ionicons name="trash-outline" size={16} color={colors.danger} />
               </TouchableOpacity>
             </View>
-          </Pressable>
+          </View>
         ))}
 
         <TouchableOpacity
@@ -196,7 +200,7 @@ export default function Members() {
           onPress={() => setModal({ kind: 'type', code: '', name: '', description: '', color: typePalette[scheduleTypes.length % typePalette.length] })}
         >
           <Ionicons name="add" size={20} color={colors.brand} />
-          <Text style={styles.addText}>Novo tipo</Text>
+          <Text style={styles.addText}>{t('members.new_type')}</Text>
         </TouchableOpacity>
       </ScrollView>
 
@@ -204,17 +208,17 @@ export default function Members() {
       <Modal visible={modal?.kind === 'member'} transparent animationType="slide" onRequestClose={() => setModal(null)}>
         <View style={styles.overlay}>
           <View style={styles.sheet}>
-            <Text style={styles.sheetTitle}>{modal && 'id' in modal && (modal as any).id ? 'Editar membro' : 'Novo membro'}</Text>
+            <Text style={styles.sheetTitle}>{modal && 'id' in modal && (modal as any).id ? t('members.edit_member') : t('members.add_member_title')}</Text>
             <ScrollView style={{ maxHeight: 500 }} keyboardShouldPersistTaps="handled">
               <TextInput
                 testID="member-name-input"
                 style={styles.input}
-                placeholder="Nome"
+                placeholder={t('members.name')}
                 placeholderTextColor={colors.textSecondary}
                 value={modal?.kind === 'member' ? modal.name : ''}
-                onChangeText={(t) => setModal((p) => p?.kind === 'member' ? { ...p, name: t } : p)}
+                onChangeText={(v) => setModal((p) => p?.kind === 'member' ? { ...p, name: v } : p)}
               />
-              <Text style={styles.label}>Cor</Text>
+              <Text style={styles.label}>{t('members.color')}</Text>
               <View style={styles.colorRow}>
                 {memberPalette.map((c) => (
                   <TouchableOpacity key={c} onPress={() => setModal((p) => p?.kind === 'member' ? { ...p, color: c } : p)}
@@ -222,8 +226,8 @@ export default function Members() {
                 ))}
               </View>
             </ScrollView>
-            <TouchableOpacity testID="save-member" style={styles.primaryBtn} onPress={saveMember}><Text style={styles.primaryBtnText}>Guardar</Text></TouchableOpacity>
-            <TouchableOpacity onPress={() => setModal(null)} style={{ alignItems: 'center', marginTop: 10 }}><Text style={{ color: colors.textSecondary }}>Cancelar</Text></TouchableOpacity>
+            <TouchableOpacity testID="save-member" style={styles.primaryBtn} onPress={saveMember}><Text style={styles.primaryBtnText}>{t('common.save')}</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => setModal(null)} style={{ alignItems: 'center', marginTop: 10 }}><Text style={{ color: colors.textSecondary }}>{t('common.cancel')}</Text></TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -232,18 +236,18 @@ export default function Members() {
       <Modal visible={modal?.kind === 'type'} transparent animationType="slide" onRequestClose={() => setModal(null)}>
         <View style={styles.overlay}>
           <View style={styles.sheet}>
-            <Text style={styles.sheetTitle}>{modal && 'id' in modal && (modal as any).id ? 'Editar tipo' : 'Novo tipo'}</Text>
+            <Text style={styles.sheetTitle}>{modal && 'id' in modal && (modal as any).id ? t('members.edit_type') : t('members.add_type_title')}</Text>
             <ScrollView style={{ maxHeight: 500 }} keyboardShouldPersistTaps="handled">
-              <TextInput testID="type-code-input" style={styles.input} placeholder="Código (ex: INF)" placeholderTextColor={colors.textSecondary} autoCapitalize="characters"
+              <TextInput testID="type-code-input" style={styles.input} placeholder={t('members.code')} placeholderTextColor={colors.textSecondary} autoCapitalize="characters"
                 value={modal?.kind === 'type' ? modal.code : ''}
-                onChangeText={(t) => setModal((p) => p?.kind === 'type' ? { ...p, code: t.toUpperCase() } : p)} />
-              <TextInput testID="type-name-input" style={styles.input} placeholder="Nome" placeholderTextColor={colors.textSecondary}
+                onChangeText={(v) => setModal((p) => p?.kind === 'type' ? { ...p, code: v.toUpperCase() } : p)} />
+              <TextInput testID="type-name-input" style={styles.input} placeholder={t('members.name')} placeholderTextColor={colors.textSecondary}
                 value={modal?.kind === 'type' ? modal.name : ''}
-                onChangeText={(t) => setModal((p) => p?.kind === 'type' ? { ...p, name: t } : p)} />
-              <TextInput testID="type-desc-input" style={styles.input} placeholder="Descrição (opcional)" placeholderTextColor={colors.textSecondary}
+                onChangeText={(v) => setModal((p) => p?.kind === 'type' ? { ...p, name: v } : p)} />
+              <TextInput testID="type-desc-input" style={styles.input} placeholder={t('members.description')} placeholderTextColor={colors.textSecondary}
                 value={modal?.kind === 'type' ? modal.description : ''}
-                onChangeText={(t) => setModal((p) => p?.kind === 'type' ? { ...p, description: t } : p)} />
-              <Text style={styles.label}>Cor</Text>
+                onChangeText={(v) => setModal((p) => p?.kind === 'type' ? { ...p, description: v } : p)} />
+              <Text style={styles.label}>{t('members.color')}</Text>
               <View style={styles.colorRow}>
                 {typePalette.map((c) => (
                   <TouchableOpacity key={c} onPress={() => setModal((p) => p?.kind === 'type' ? { ...p, color: c } : p)}
@@ -251,8 +255,8 @@ export default function Members() {
                 ))}
               </View>
             </ScrollView>
-            <TouchableOpacity testID="save-type" style={styles.primaryBtn} onPress={saveType}><Text style={styles.primaryBtnText}>Guardar</Text></TouchableOpacity>
-            <TouchableOpacity onPress={() => setModal(null)} style={{ alignItems: 'center', marginTop: 10 }}><Text style={{ color: colors.textSecondary }}>Cancelar</Text></TouchableOpacity>
+            <TouchableOpacity testID="save-type" style={styles.primaryBtn} onPress={saveType}><Text style={styles.primaryBtnText}>{t('common.save')}</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => setModal(null)} style={{ alignItems: 'center', marginTop: 10 }}><Text style={{ color: colors.textSecondary }}>{t('common.cancel')}</Text></TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -261,25 +265,25 @@ export default function Members() {
       <Modal visible={modal?.kind === 'assign'} transparent animationType="slide" onRequestClose={() => setModal(null)}>
         <View style={styles.overlay}>
           <View style={styles.sheet}>
-            <Text style={styles.sheetTitle}>Atribuir tipos</Text>
+            <Text style={styles.sheetTitle}>{t('members.assign_types')}</Text>
             <ScrollView style={{ maxHeight: 460 }} keyboardShouldPersistTaps="handled">
-              {scheduleTypes.length === 0 ? <Text style={styles.faded}>Sem tipos. Cria tipos primeiro.</Text> : scheduleTypes.map((t) => {
-                const assigned = modal?.kind === 'assign' && memberScheduleTypes.some((x) => x.member_id === modal.memberId && x.schedule_type_id === t.id);
+              {scheduleTypes.length === 0 ? <Text style={styles.faded}>{t('members.no_types_create_first')}</Text> : scheduleTypes.map((st) => {
+                const assigned = modal?.kind === 'assign' && memberScheduleTypes.some((x) => x.member_id === modal.memberId && x.schedule_type_id === st.id);
                 return (
                   <TouchableOpacity
-                    key={t.id}
-                    testID={`toggle-assign-${t.code}`}
-                    style={[styles.assignRow, { backgroundColor: t.color, opacity: assigned ? 1 : 0.55 }]}
-                    onPress={() => modal?.kind === 'assign' && toggleAssign(modal.memberId, t.id)}
+                    key={st.id}
+                    testID={`toggle-assign-${st.code}`}
+                    style={[styles.assignRow, { backgroundColor: st.color, opacity: assigned ? 1 : 0.55 }]}
+                    onPress={() => modal?.kind === 'assign' && toggleAssign(modal.memberId, st.id)}
                   >
-                    <Text style={styles.typeCodeBig}>{t.code}</Text>
-                    <Text style={{ flex: 1, fontWeight: '700', color: colors.textPrimary }}>{t.name}</Text>
+                    <Text style={styles.typeCodeBig}>{st.code}</Text>
+                    <Text style={{ flex: 1, fontWeight: '700', color: colors.textPrimary }}>{st.name}</Text>
                     <Ionicons name={assigned ? 'checkmark-circle' : 'ellipse-outline'} size={22} color={colors.textPrimary} />
                   </TouchableOpacity>
                 );
               })}
             </ScrollView>
-            <TouchableOpacity onPress={() => setModal(null)} style={styles.primaryBtn}><Text style={styles.primaryBtnText}>Concluído</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => setModal(null)} style={styles.primaryBtn}><Text style={styles.primaryBtnText}>{t('common.done')}</Text></TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -300,6 +304,7 @@ const styles = StyleSheet.create({
   section: { fontSize: 12, fontWeight: '800', color: colors.textSecondary, letterSpacing: 1.2, marginBottom: spacing.sm },
   card: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md, marginBottom: spacing.sm, borderWidth: 1, borderColor: colors.border },
   cardHead: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  cardHeadLeft: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 },
   avatar: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   avatarText: { fontWeight: '800', color: colors.textPrimary, fontSize: 16 },
   cardTitle: { flex: 1, fontSize: 16, fontWeight: '700', color: colors.textPrimary },
