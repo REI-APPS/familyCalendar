@@ -6,6 +6,9 @@
 const RESEND_URL = 'https://api.resend.com/emails';
 const KEY = process.env.EXPO_PUBLIC_RESEND_KEY || '';
 const FROM = process.env.EXPO_PUBLIC_INVITE_FROM || 'onboarding@resend.dev';
+// URL pública de aterragem / Play Store (configurável via env futuramente)
+const PLAY_STORE_URL = process.env.EXPO_PUBLIC_PLAY_STORE_URL
+  || 'https://play.google.com/store/apps/details?id=com.grouprei.familyCalendar';
 
 export async function sendInviteEmail(opts: {
   to: string;
@@ -18,13 +21,17 @@ export async function sendInviteEmail(opts: {
     <div style="max-width:520px;margin:0 auto;background:#fff;border-radius:16px;padding:32px;border:1px solid #E8E5DC;">
       <h1 style="margin:0 0 12px;font-size:24px;color:#FF8FA3;">Foste convidado(a)! 🏡</h1>
       <p style="font-size:15px;line-height:22px;">${opts.inviterEmail ? `<b>${opts.inviterEmail}</b>` : 'Alguém'} convidou-te para fazer parte da família <b>"${opts.familyName}"</b> na <b>Agenda da Família</b>.</p>
-      <p style="font-size:15px;line-height:22px;">Para aceder:</p>
+      <p style="font-size:15px;line-height:22px;margin-top:18px;"><b>Como aceitar:</b></p>
       <ol style="font-size:14px;line-height:24px;color:#7D8299;">
-        <li>Instala a app <b>Agenda da Família</b> (Google Play)</li>
-        <li>Cria conta com este mesmo email: <b>${opts.to}</b></li>
-        <li>Vais ficar automaticamente associado(a) à família</li>
+        <li>Instala a app <b>Agenda da Família</b> (clica no botão abaixo)</li>
+        <li>Cria conta usando <b>este mesmo email</b>: <span style="color:#2D3142;font-weight:700;">${opts.to}</span></li>
+        <li>Ao entrar pela primeira vez ficas <b>automaticamente</b> associado(a) à família <b>${opts.familyName}</b>. Não precisas de clicar em nenhum link de aceitação!</li>
       </ol>
-      <p style="font-size:12px;color:#9CA0A8;margin-top:24px;">Recebeste este email porque foste convidado(a) por um membro da família. Se foi engano, ignora.</p>
+      <div style="text-align:center;margin:28px 0 8px;">
+        <a href="${PLAY_STORE_URL}" style="display:inline-block;background:#FF8FA3;color:#fff;text-decoration:none;padding:14px 28px;border-radius:999px;font-weight:700;font-size:15px;">Instalar Agenda da Família</a>
+      </div>
+      <p style="font-size:11px;color:#9CA0A8;text-align:center;margin-top:18px;">Importante: o email da conta tem de coincidir com <b>${opts.to}</b> para o convite ser detectado.</p>
+      <p style="font-size:11px;color:#9CA0A8;margin-top:24px;">Recebeste este email porque foste convidado(a) por um membro da família. Se foi engano, ignora.</p>
     </div>
   </body></html>`;
   try {
