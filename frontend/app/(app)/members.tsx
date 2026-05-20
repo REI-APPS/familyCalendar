@@ -39,10 +39,17 @@ export default function Members() {
       message: `Vais apagar "${name}" e todos os horários atribuídos a este membro.`,
       onConfirm: async () => {
         setConfirm(null);
-        const { data, error } = await supabase.from('members').delete().eq('id', id).select();
-        if (error) { showToast('Erro: ' + error.message); return; }
-        if (!data || data.length === 0) {
-          showToast('Bloqueado pelo Supabase (RLS). Executa SUPABASE_FIX_DELETE_V2.sql no SQL Editor.');
+        const { data, error } = await supabase.rpc('delete_member', { member_id_to_delete: id });
+        if (error) {
+          if (error.message?.includes('does not exist') || error.code === 'PGRST202') {
+            showToast('Executa SUPABASE_FIX_DELETE_V4.sql no Supabase SQL Editor.');
+          } else {
+            showToast('Erro: ' + error.message);
+          }
+          return;
+        }
+        if (!data) {
+          showToast('Membro não encontrado ou já apagado.');
           return;
         }
         showToast(`"${name}" apagado.`);
@@ -66,10 +73,17 @@ export default function Members() {
       message: `Vais apagar "${name}" e todos os horários que o usam.`,
       onConfirm: async () => {
         setConfirm(null);
-        const { data, error } = await supabase.from('schedule_types').delete().eq('id', id).select();
-        if (error) { showToast('Erro: ' + error.message); return; }
-        if (!data || data.length === 0) {
-          showToast('Bloqueado pelo Supabase (RLS). Executa SUPABASE_FIX_DELETE.sql no SQL Editor.');
+        const { data, error } = await supabase.rpc('delete_schedule_type', { type_id_to_delete: id });
+        if (error) {
+          if (error.message?.includes('does not exist') || error.code === 'PGRST202') {
+            showToast('Executa SUPABASE_FIX_DELETE_V4.sql no Supabase SQL Editor.');
+          } else {
+            showToast('Erro: ' + error.message);
+          }
+          return;
+        }
+        if (!data) {
+          showToast('Tipo não encontrado ou já apagado.');
           return;
         }
         showToast(`"${name}" apagado.`);
