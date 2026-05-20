@@ -3,13 +3,15 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput,
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { format, addDays, subDays, isToday } from 'date-fns';
-import { pt } from 'date-fns/locale';
+import { useTranslation } from 'react-i18next';
 import { useFamily } from '../../src/contexts/FamilyContext';
 import { supabase } from '../../src/lib/supabase';
 import { colors, radius, spacing } from '../../src/lib/theme';
 import { SwipeNav } from '../../src/lib/SwipeNav';
+import { currentDateLocale } from '../../src/i18n';
 
 export default function Today() {
+  const { t } = useTranslation();
   const { family, members, scheduleTypes, memberScheduleTypes, entries, createFamilyWithDefaults, refresh } = useFamily();
   const [date, setDate] = useState(new Date());
   const [editing, setEditing] = useState<{ memberId: string } | null>(null);
@@ -43,7 +45,7 @@ export default function Today() {
     if (!newFamily.trim()) return;
     const id = await createFamilyWithDefaults(newFamily.trim());
     if (id) { setNewFamily(''); setShowCreate(false); }
-    else Alert.alert('Erro', 'Não foi possível criar a família. Verifica se o SQL foi aplicado.');
+    else Alert.alert(t('common.error'), t('family.create_error'));
   };
 
   if (!family) {
@@ -51,19 +53,19 @@ export default function Today() {
       <SafeAreaView style={styles.safe}>
         <View style={styles.emptyState}>
           <Text style={styles.emptyEmoji}>🏠</Text>
-          <Text style={styles.emptyTitle}>Bem-vindo!</Text>
-          <Text style={styles.emptyBody}>Cria a tua família para começar.</Text>
+          <Text style={styles.emptyTitle}>{t('family.welcome')}</Text>
+          <Text style={styles.emptyBody}>{t('family.create_to_start')}</Text>
           <TouchableOpacity testID="create-family-button" style={styles.primaryBtn} onPress={() => setShowCreate(true)}>
-            <Text style={styles.primaryBtnText}>Criar Família</Text>
+            <Text style={styles.primaryBtnText}>{t('family.create')}</Text>
           </TouchableOpacity>
         </View>
         <Modal visible={showCreate} transparent animationType="slide" onRequestClose={() => setShowCreate(false)}>
           <View style={styles.modalOverlay}>
             <View style={styles.sheet}>
-              <Text style={styles.sheetTitle}>Nome da Família</Text>
-              <TextInput testID="family-name-input" value={newFamily} onChangeText={setNewFamily} placeholder="Família Silva" placeholderTextColor={colors.textSecondary} style={styles.input} autoFocus />
-              <TouchableOpacity testID="create-family-confirm" style={styles.primaryBtn} onPress={onCreateFamily}><Text style={styles.primaryBtnText}>Criar</Text></TouchableOpacity>
-              <TouchableOpacity style={{ alignItems: 'center', marginTop: spacing.md }} onPress={() => setShowCreate(false)}><Text style={{ color: colors.textSecondary, fontWeight: '600' }}>Cancelar</Text></TouchableOpacity>
+              <Text style={styles.sheetTitle}>{t('family.family_name')}</Text>
+              <TextInput testID="family-name-input" value={newFamily} onChangeText={setNewFamily} placeholder={t('family.placeholder')} placeholderTextColor={colors.textSecondary} style={styles.input} autoFocus />
+              <TouchableOpacity testID="create-family-confirm" style={styles.primaryBtn} onPress={onCreateFamily}><Text style={styles.primaryBtnText}>{t('family.create')}</Text></TouchableOpacity>
+              <TouchableOpacity style={{ alignItems: 'center', marginTop: spacing.md }} onPress={() => setShowCreate(false)}><Text style={{ color: colors.textSecondary, fontWeight: '600' }}>{t('common.cancel')}</Text></TouchableOpacity>
             </View>
           </View>
         </Modal>
@@ -76,8 +78,8 @@ export default function Today() {
       <View style={styles.header}>
         <View style={{ flex: 1 }}>
           <Text style={styles.familyTag}>{family.name.toUpperCase()}</Text>
-          <Text style={styles.headerTitle}>{isToday(date) ? 'Hoje' : format(date, "EEEE", { locale: pt })}</Text>
-          <Text style={styles.headerSub}>{format(date, "d 'de' MMMM", { locale: pt })}</Text>
+          <Text style={styles.headerTitle}>{isToday(date) ? t('today.title_today') : format(date, "EEEE", { locale: currentDateLocale() })}</Text>
+          <Text style={styles.headerSub}>{format(date, "d MMMM", { locale: currentDateLocale() })}</Text>
         </View>
         <View style={{ flexDirection: 'row', gap: 6 }}>
           <TouchableOpacity testID="prev-day" style={styles.iconBtn} onPress={() => setDate(subDays(date, 1))}><Ionicons name="chevron-back" size={20} color={colors.textPrimary} /></TouchableOpacity>
@@ -110,7 +112,7 @@ export default function Today() {
                     {type ? (
                       <Text style={styles.typeDesc}>{type.description || type.name}</Text>
                     ) : (
-                      <Text style={styles.tapToSet}>{types.length > 0 ? 'Toca para definir' : 'Sem tipos atribuídos'}</Text>
+                      <Text style={styles.tapToSet}>{types.length > 0 ? t('today.tap_to_set') : t('today.no_types')}</Text>
                     )}
                   </View>
                   <Ionicons name="chevron-forward" size={18} color={colors.textPrimary} />
@@ -124,10 +126,10 @@ export default function Today() {
       <Modal visible={!!editing} transparent animationType="slide" onRequestClose={() => setEditing(null)}>
         <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setEditing(null)}>
           <TouchableOpacity activeOpacity={1} style={styles.sheet}>
-            <Text style={styles.sheetTitle}>Escolhe o tipo</Text>
+            <Text style={styles.sheetTitle}>{t('today.pick_type')}</Text>
             <ScrollView style={{ maxHeight: 440 }}>
               {editing && memberTypes(editing.memberId).length === 0 ? (
-                <Text style={{ color: colors.textSecondary, textAlign: 'center', padding: 20 }}>Este membro não tem tipos atribuídos.</Text>
+                <Text style={{ color: colors.textSecondary, textAlign: 'center', padding: 20 }}>{t('today.no_types_for_member')}</Text>
               ) : (
                 editing && memberTypes(editing.memberId).map((t) => (
                   <TouchableOpacity key={t.id} testID={`select-type-${t.code}`} style={[styles.typeOption, { backgroundColor: t.color }]} onPress={() => assignType(editing.memberId, t.id)}>
@@ -141,7 +143,7 @@ export default function Today() {
             </ScrollView>
             {editing && memberEntry(editing.memberId) && (
               <TouchableOpacity testID="clear-entry" style={styles.clearBtn} onPress={() => clearEntry(editing.memberId)}>
-                <Text style={{ color: colors.danger, fontWeight: '700' }}>Limpar</Text>
+                <Text style={{ color: colors.danger, fontWeight: '700' }}>{t('today.clear')}</Text>
               </TouchableOpacity>
             )}
           </TouchableOpacity>

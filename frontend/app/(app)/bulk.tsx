@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Alert } fr
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { addDays, eachDayOfInterval, format, addMonths } from 'date-fns';
-import { pt } from 'date-fns/locale';
+import { currentDateLocale } from '../../src/i18n';
 import { useFamily } from '../../src/contexts/FamilyContext';
 import { supabase } from '../../src/lib/supabase';
 import { colors, radius, spacing } from '../../src/lib/theme';
@@ -139,7 +139,7 @@ export default function BulkFill() {
           <TouchableOpacity testID="start-prev-day" style={styles.iconSmall} onPress={() => setStartDate((d) => addDays(d, -1))}>
             <Ionicons name="remove" size={16} color={colors.textPrimary} />
           </TouchableOpacity>
-          <Text style={styles.dateText}>{format(startDate, "d 'de' MMMM yyyy", { locale: pt })}</Text>
+          <Text style={styles.dateText}>{format(startDate, "d MMMM yyyy", { locale: currentDateLocale() })}</Text>
           <TouchableOpacity testID="start-next-day" style={styles.iconSmall} onPress={() => setStartDate((d) => addDays(d, 1))}>
             <Ionicons name="add" size={16} color={colors.textPrimary} />
           </TouchableOpacity>

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -8,6 +8,7 @@ import { useFonts } from 'expo-font';
 import { Ionicons } from '@expo/vector-icons';
 import { AuthProvider } from '../src/contexts/AuthContext';
 import { FamilyProvider } from '../src/contexts/FamilyContext';
+import { hydrateLanguage } from '../src/i18n';
 import '../widget-task-handler';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -16,12 +17,17 @@ export default function RootLayout() {
   const [fontsLoaded] = useFonts({
     ...Ionicons.font,
   });
+  const [i18nReady, setI18nReady] = useState(false);
 
   useEffect(() => {
-    if (fontsLoaded) SplashScreen.hideAsync().catch(() => {});
-  }, [fontsLoaded]);
+    hydrateLanguage().finally(() => setI18nReady(true));
+  }, []);
 
-  if (!fontsLoaded) return null;
+  useEffect(() => {
+    if (fontsLoaded && i18nReady) SplashScreen.hideAsync().catch(() => {});
+  }, [fontsLoaded, i18nReady]);
+
+  if (!fontsLoaded || !i18nReady) return null;
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

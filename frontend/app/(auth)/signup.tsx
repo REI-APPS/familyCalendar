@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Alert, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link, useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { colors, radius, spacing } from '../../src/lib/theme';
 
 export default function Signup() {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [pwd, setPwd] = useState('');
   const [loading, setLoading] = useState(false);
@@ -16,15 +18,15 @@ export default function Signup() {
 
   const onSubmit = async () => {
     setErrorMsg(''); setSuccessMsg('');
-    if (!email || !pwd) { setErrorMsg('Preenche todos os campos'); return; }
-    if (pwd.length < 6) { setErrorMsg('Palavra-passe: mínimo 6 caracteres'); return; }
+    if (!email || !pwd) { setErrorMsg(t('auth.fill_all')); return; }
+    if (pwd.length < 6) { setErrorMsg(t('auth.password') + ': min. 6'); return; }
     setLoading(true);
     const { error } = await signUp(email.trim(), pwd);
     setLoading(false);
     if (error) setErrorMsg(error);
     else {
-      setSuccessMsg('Conta criada! Se a confirmação por email estiver ativa, verifica o teu email. Caso contrário, já podes entrar.');
-      setTimeout(() => router.replace('/(auth)/login'), 2500);
+      setSuccessMsg('✓');
+      setTimeout(() => router.replace('/(auth)/login'), 1500);
     }
   };
 
@@ -34,12 +36,12 @@ export default function Signup() {
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
           <View style={styles.hero}>
             <Text style={styles.emoji}>✨</Text>
-            <Text style={styles.title}>Cria a tua Família</Text>
-            <Text style={styles.subtitle}>Após confirmar o email, cria a tua agenda</Text>
+            <Text style={styles.title}>{t('auth.sign_up')}</Text>
+            <Text style={styles.subtitle}>{t('auth.subtitle')}</Text>
           </View>
 
           <View style={styles.card}>
-            <Text style={styles.label}>Email</Text>
+            <Text style={styles.label}>{t('auth.email')}</Text>
             <TextInput
               testID="signup-email-input"
               value={email}
@@ -50,24 +52,24 @@ export default function Signup() {
               placeholderTextColor={colors.textSecondary}
               style={styles.input}
             />
-            <Text style={styles.label}>Palavra-passe</Text>
+            <Text style={styles.label}>{t('auth.password')}</Text>
             <TextInput
               testID="signup-password-input"
               value={pwd}
               onChangeText={setPwd}
               secureTextEntry
-              placeholder="Mínimo 6 caracteres"
+              placeholder="••••••••"
               placeholderTextColor={colors.textSecondary}
               style={styles.input}
             />
             {errorMsg ? <Text testID="signup-error" style={styles.errorText}>{errorMsg}</Text> : null}
             {successMsg ? <Text testID="signup-success" style={styles.successText}>{successMsg}</Text> : null}
             <TouchableOpacity testID="signup-submit-button" style={styles.primaryBtn} onPress={onSubmit} disabled={loading}>
-              <Text style={styles.primaryBtnText}>{loading ? 'A criar…' : 'Criar Conta'}</Text>
+              <Text style={styles.primaryBtnText}>{loading ? t('common.loading') : t('auth.sign_up')}</Text>
             </TouchableOpacity>
             <Link href="/(auth)/login" asChild>
               <TouchableOpacity testID="goto-login" style={styles.linkBtn}>
-                <Text style={styles.linkText}>Já tens conta? Entrar</Text>
+                <Text style={styles.linkText}>{t('auth.have_account')}</Text>
               </TouchableOpacity>
             </Link>
           </View>
