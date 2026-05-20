@@ -7,7 +7,7 @@ import { useAuth } from '../../src/contexts/AuthContext';
 import { useFamily } from '../../src/contexts/FamilyContext';
 import { supabase } from '../../src/lib/supabase';
 import { colors, radius, spacing } from '../../src/lib/theme';
-import { updateAgendaWidget } from '../../src/lib/widgetUpdate';
+import { updateAllWidgets } from '../../src/lib/widgetUpdate';
 import { storage } from '../../src/utils/storage';
 import { sendInviteEmail } from '../../src/lib/resend';
 
@@ -36,7 +36,7 @@ export default function Settings() {
 
   useEffect(() => {
     if (!family) return;
-    updateAgendaWidget({
+    updateAllWidgets({
       familyName: family.name,
       members, scheduleTypes, entries,
       dayOffset: widgetDay,

@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, Alert, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFamily } from '../../src/contexts/FamilyContext';
 import { supabase } from '../../src/lib/supabase';
 import { colors, radius, spacing, memberPalette, typePalette } from '../../src/lib/theme';
+import { confirmAction } from '../../src/lib/confirm';
 
 type ModalState =
   | { kind: 'member'; id?: string; name: string; color: string }
@@ -12,12 +13,9 @@ type ModalState =
   | { kind: 'assign'; memberId: string }
   | null;
 
-type ConfirmState = { title: string; message: string; onConfirm: () => void } | null;
-
 export default function Members() {
   const { family, members, scheduleTypes, memberScheduleTypes, refresh } = useFamily();
   const [modal, setModal] = useState<ModalState>(null);
-  const [confirm, setConfirm] = useState<ConfirmState>(null);
   const [toast, setToast] = useState<string>('');
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3500); };
@@ -34,28 +32,26 @@ export default function Members() {
   };
 
   const deleteMember = (id: string, name: string) => {
-    setConfirm({
-      title: 'Apagar membro?',
-      message: `Vais apagar "${name}" e todos os horários atribuídos a este membro.`,
-      onConfirm: async () => {
-        setConfirm(null);
+    confirmAction(
+      'Apagar membro?',
+      `Vais apagar "${name}" e todos os horários atribuídos a este membro.`,
+      async () => {
         console.log('[delete_member] calling RPC with id=', id);
         const { data, error } = await supabase.rpc('delete_member', { member_id_to_delete: id });
         console.log('[delete_member] response:', { data, error });
         if (error) {
           const msg = error.message || JSON.stringify(error);
-          // mostra a mensagem completa para ajudar a diagnosticar
           Alert.alert('Erro a apagar', `${msg}\n\nCódigo: ${error.code ?? '-'}\nDica: confirma que executaste SUPABASE_FIX_DELETE_V5.sql.`);
           return;
         }
         if (data === false) {
-          Alert.alert('Não foi apagado', 'A função correu mas não apagou nenhuma linha. Linha já tinha sido apagada?');
+          Alert.alert('Não foi apagado', 'A função correu mas não apagou nenhuma linha.');
           return;
         }
         showToast(`"${name}" apagado.`);
         refresh();
-      },
-    });
+      }
+    );
   };
 
   const saveType = async () => {
@@ -68,17 +64,16 @@ export default function Members() {
   };
 
   const deleteType = (id: string, name: string) => {
-    setConfirm({
-      title: 'Apagar tipo?',
-      message: `Vais apagar "${name}" e todos os horários que o usam.`,
-      onConfirm: async () => {
-        setConfirm(null);
+    confirmAction(
+      'Apagar tipo?',
+      `Vais apagar "${name}" e todos os horários que o usam.`,
+      async () => {
         console.log('[delete_schedule_type] calling RPC with id=', id);
         const { data, error } = await supabase.rpc('delete_schedule_type', { type_id_to_delete: id });
         console.log('[delete_schedule_type] response:', { data, error });
         if (error) {
           const msg = error.message || JSON.stringify(error);
-          Alert.alert('Erro a apagar', `${msg}\n\nCódigo: ${error.code ?? '-'}\nDica: confirma que executaste SUPABASE_FIX_DELETE_V5.sql.`);
+          Alert.alert('Erro a apagar', `${msg}\n\nCódigo: ${error.code ?? '-'}`);
           return;
         }
         if (data === false) {
@@ -87,8 +82,8 @@ export default function Members() {
         }
         showToast(`"${name}" apagado.`);
         refresh();
-      },
-    });
+      }
+    );
   };
 
   const toggleAssign = async (memberId: string, typeId: string) => {
@@ -107,43 +102,69 @@ export default function Members() {
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: 100 }}>
         <Text style={styles.section}>MEMBROS</Text>
+
         {members.map((m) => {
           const types = memberAssignedTypes(m.id);
           return (
             <View key={m.id} style={styles.card}>
-              <TouchableOpacity
+              <Pressable
                 testID={`member-row-${m.id}`}
                 style={styles.cardHead}
                 onPress={() => setModal({ kind: 'member', id: m.id, name: m.name, color: m.color })}
               >
-                <View style={[styles.avatar, { backgroundColor: m.color }]}><Text style={styles.avatarText}>{m.name[0].toUpperCase()}</Text></View>
+                <View style={[styles.avatar, { backgroundColor: m.color }]}>
+                  <Text style={styles.avatarText}>{m.name[0].toUpperCase()}</Text>
+                </View>
                 <Text style={styles.cardTitle}>{m.name}</Text>
-                <TouchableOpacity testID={`assign-${m.id}`} onPress={() => setModal({ kind: 'assign', memberId: m.id })} style={styles.smallBtn}>
+                <TouchableOpacity
+                  testID={`assign-${m.id}`}
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    setModal({ kind: 'assign', memberId: m.id });
+                  }}
+                  style={styles.smallBtn}
+                >
                   <Ionicons name="link-outline" size={16} color={colors.textPrimary} />
                 </TouchableOpacity>
-                <TouchableOpacity testID={`delete-member-${m.id}`} onPress={() => deleteMember(m.id, m.name)} style={styles.smallBtn}>
+                <TouchableOpacity
+                  testID={`delete-member-${m.id}`}
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    deleteMember(m.id, m.name);
+                  }}
+                  style={styles.smallBtn}
+                >
                   <Ionicons name="trash-outline" size={16} color={colors.danger} />
                 </TouchableOpacity>
-              </TouchableOpacity>
+              </Pressable>
               <View style={styles.tagRow}>
-                {types.length === 0 ? <Text style={styles.faded}>Sem tipos atribuídos</Text> :
-                  types.map((t) => <View key={t.id} style={[styles.tag, { backgroundColor: t.color }]}><Text style={styles.tagText}>{t.code}</Text></View>)}
+                {types.length === 0 ? (
+                  <Text style={styles.faded}>Sem tipos atribuídos</Text>
+                ) : (
+                  types.map((t) => (
+                    <View key={t.id} style={[styles.tag, { backgroundColor: t.color }]}>
+                      <Text style={styles.tagText}>{t.code}</Text>
+                    </View>
+                  ))
+                )}
               </View>
             </View>
           );
         })}
+
         <TouchableOpacity
           testID="add-member"
           style={styles.addBtn}
-          onPress={() => setModal({ kind: 'member', name: '', color: memberPalette[(members.length) % memberPalette.length] })}
+          onPress={() => setModal({ kind: 'member', name: '', color: memberPalette[members.length % memberPalette.length] })}
         >
           <Ionicons name="add" size={20} color={colors.brand} />
           <Text style={styles.addText}>Novo membro</Text>
         </TouchableOpacity>
 
         <Text style={[styles.section, { marginTop: spacing.xl }]}>TIPOS DE HORÁRIO</Text>
+
         {scheduleTypes.map((t) => (
-          <TouchableOpacity
+          <Pressable
             key={t.id}
             testID={`type-row-${t.code}`}
             style={[styles.card, { backgroundColor: t.color }]}
@@ -155,12 +176,20 @@ export default function Members() {
                 <Text style={styles.cardTitle}>{t.name}</Text>
                 {t.description ? <Text style={styles.cardSub}>{t.description}</Text> : null}
               </View>
-              <TouchableOpacity testID={`delete-type-${t.code}`} onPress={() => deleteType(t.id, t.name)} style={styles.smallBtn}>
+              <TouchableOpacity
+                testID={`delete-type-${t.code}`}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  deleteType(t.id, t.name);
+                }}
+                style={styles.smallBtn}
+              >
                 <Ionicons name="trash-outline" size={16} color={colors.danger} />
               </TouchableOpacity>
             </View>
-          </TouchableOpacity>
+          </Pressable>
         ))}
+
         <TouchableOpacity
           testID="add-type"
           style={styles.addBtn}
@@ -254,6 +283,13 @@ export default function Members() {
           </View>
         </View>
       </Modal>
+
+      {/* Toast */}
+      {toast ? (
+        <View style={styles.toast} pointerEvents="none">
+          <Text style={styles.toastText}>{toast}</Text>
+        </View>
+      ) : null}
     </SafeAreaView>
   );
 }
@@ -287,4 +323,6 @@ const styles = StyleSheet.create({
   primaryBtn: { backgroundColor: colors.brand, paddingVertical: 14, borderRadius: radius.pill, alignItems: 'center', marginTop: 8 },
   primaryBtnText: { color: colors.textInverse, fontWeight: '700', fontSize: 16 },
   assignRow: { flexDirection: 'row', alignItems: 'center', padding: 12, borderRadius: radius.md, marginBottom: 8, gap: 8 },
+  toast: { position: 'absolute', bottom: 100, left: spacing.lg, right: spacing.lg, backgroundColor: colors.textPrimary, padding: 14, borderRadius: radius.md, alignItems: 'center' },
+  toastText: { color: '#fff', fontWeight: '600', fontSize: 14 },
 });

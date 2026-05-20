@@ -1,18 +1,21 @@
 import { Platform } from 'react-native';
-import { addDays, format } from 'date-fns';
+import { addDays, format, startOfWeek } from 'date-fns';
 
 export type Member = { id: string; name: string; color: string };
 export type ScheduleType = { id: string; code: string; name: string; description?: string | null; color: string };
 export type ScheduleEntry = { member_id: string; schedule_type_id: string; entry_date: string };
 
-export async function updateAgendaWidget(opts: {
+type Opts = {
   familyName: string;
   members: Member[];
   scheduleTypes: ScheduleType[];
   entries: ScheduleEntry[];
   dayOffset?: number;
   transparent?: boolean;
-}) {
+};
+
+// Update the Today (Agenda) widget
+export async function updateAgendaWidget(opts: Opts) {
   if (Platform.OS !== 'android') return;
   try {
     const { requestWidgetUpdate } = require('react-native-android-widget');
@@ -29,7 +32,7 @@ export async function updateAgendaWidget(opts: {
         memberName: m.name,
         memberColor: m.color,
         typeName: t ? (t.description || t.name) : 'Sem horário',
-        typeColor: t?.color || '#F5F3EC',
+        typeColor: t?.color || (transparent ? '#FFFFFF44' : '#F5F3EC'),
       };
     });
 
@@ -43,4 +46,50 @@ export async function updateAgendaWidget(opts: {
   } catch (e) {
     // Library not available — ignore
   }
+}
+
+// Update the Week (AgendaWeek) widget
+export async function updateAgendaWeekWidget(opts: Opts) {
+  if (Platform.OS !== 'android') return;
+  try {
+    const { requestWidgetUpdate } = require('react-native-android-widget');
+    const { AgendaWeekWidget } = require('../widgets/AgendaWeekWidget');
+
+    const { members, scheduleTypes, entries, transparent = false } = opts;
+    const weekStartDate = startOfWeek(new Date(), { weekStartsOn: 1 });
+    const days = Array.from({ length: 7 }, (_, i) => addDays(weekStartDate, i));
+
+    const matrix = days.map((d) => {
+      const ds = format(d, 'yyyy-MM-dd');
+      return members.map((m) => {
+        const ex = entries.find((e) => e.member_id === m.id && e.entry_date === ds);
+        if (!ex) return null;
+        const t = scheduleTypes.find((tt) => tt.id === ex.schedule_type_id);
+        if (!t) return null;
+        return { typeColor: t.color, typeName: t.code };
+      });
+    });
+
+    const payload = {
+      memberNames: members.map((m) => m.name),
+      memberColors: members.map((m) => m.color),
+      weekStart: weekStartDate.toISOString(),
+      matrix,
+      transparent,
+    };
+
+    await requestWidgetUpdate({
+      widgetName: 'AgendaWeek',
+      renderWidget: () => <AgendaWeekWidget {...payload} />,
+      widgetNotFound: () => {},
+    });
+  } catch (e) {
+    // Library not available — ignore
+  }
+}
+
+// Convenience: update both at once
+export async function updateAllWidgets(opts: Opts) {
+  await updateAgendaWidget(opts);
+  await updateAgendaWeekWidget(opts);
 }

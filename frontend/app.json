@@ -53,15 +53,27 @@
           "widgets": [
             {
               "name": "Agenda",
-              "label": "Agenda da Família",
-              "description": "Mostra a agenda da tua família no ecrã principal.",
+              "label": "Agenda · Hoje",
+              "description": "Mostra a agenda do dia (auto 4×1 ou 4×2).",
               "minWidth": "180dp",
               "minHeight": "40dp",
               "targetCellWidth": 4,
               "targetCellHeight": 1,
               "previewImage": "./assets/images/icon.png",
               "updatePeriodMillis": 1800000,
-              "resizeMode": "horizontal"
+              "resizeMode": "horizontal|vertical"
+            },
+            {
+              "name": "AgendaWeek",
+              "label": "Agenda · Semana",
+              "description": "Vista semanal: dia por linha, membro por coluna.",
+              "minWidth": "250dp",
+              "minHeight": "180dp",
+              "targetCellWidth": 4,
+              "targetCellHeight": 4,
+              "previewImage": "./assets/images/icon.png",
+              "updatePeriodMillis": 1800000,
+              "resizeMode": "horizontal|vertical"
             }
           ]
         }
