@@ -8,6 +8,7 @@ import { useFonts } from 'expo-font';
 import { Ionicons } from '@expo/vector-icons';
 import { AuthProvider } from '../src/contexts/AuthContext';
 import { FamilyProvider } from '../src/contexts/FamilyContext';
+import { ConfirmProvider } from '../src/lib/ConfirmProvider';
 import { hydrateLanguage } from '../src/i18n';
 import '../widget-task-handler';
 
@@ -36,8 +37,10 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <AuthProvider>
           <FamilyProvider>
-            <StatusBar style="dark" />
-            <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#FDFDF9' } }} />
+            <ConfirmProvider>
+              <StatusBar style="dark" />
+              <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#FDFDF9' } }} />
+            </ConfirmProvider>
           </FamilyProvider>
         </AuthProvider>
       </SafeAreaProvider>
