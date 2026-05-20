@@ -39,17 +39,17 @@ export default function Members() {
       message: `Vais apagar "${name}" e todos os horários atribuídos a este membro.`,
       onConfirm: async () => {
         setConfirm(null);
+        console.log('[delete_member] calling RPC with id=', id);
         const { data, error } = await supabase.rpc('delete_member', { member_id_to_delete: id });
+        console.log('[delete_member] response:', { data, error });
         if (error) {
-          if (error.message?.includes('does not exist') || error.code === 'PGRST202') {
-            showToast('Executa SUPABASE_FIX_DELETE_V4.sql no Supabase SQL Editor.');
-          } else {
-            showToast('Erro: ' + error.message);
-          }
+          const msg = error.message || JSON.stringify(error);
+          // mostra a mensagem completa para ajudar a diagnosticar
+          Alert.alert('Erro a apagar', `${msg}\n\nCódigo: ${error.code ?? '-'}\nDica: confirma que executaste SUPABASE_FIX_DELETE_V5.sql.`);
           return;
         }
-        if (!data) {
-          showToast('Membro não encontrado ou já apagado.');
+        if (data === false) {
+          Alert.alert('Não foi apagado', 'A função correu mas não apagou nenhuma linha. Linha já tinha sido apagada?');
           return;
         }
         showToast(`"${name}" apagado.`);
@@ -73,17 +73,16 @@ export default function Members() {
       message: `Vais apagar "${name}" e todos os horários que o usam.`,
       onConfirm: async () => {
         setConfirm(null);
+        console.log('[delete_schedule_type] calling RPC with id=', id);
         const { data, error } = await supabase.rpc('delete_schedule_type', { type_id_to_delete: id });
+        console.log('[delete_schedule_type] response:', { data, error });
         if (error) {
-          if (error.message?.includes('does not exist') || error.code === 'PGRST202') {
-            showToast('Executa SUPABASE_FIX_DELETE_V4.sql no Supabase SQL Editor.');
-          } else {
-            showToast('Erro: ' + error.message);
-          }
+          const msg = error.message || JSON.stringify(error);
+          Alert.alert('Erro a apagar', `${msg}\n\nCódigo: ${error.code ?? '-'}\nDica: confirma que executaste SUPABASE_FIX_DELETE_V5.sql.`);
           return;
         }
-        if (!data) {
-          showToast('Tipo não encontrado ou já apagado.');
+        if (data === false) {
+          Alert.alert('Não foi apagado', 'A função correu mas não apagou nenhuma linha.');
           return;
         }
         showToast(`"${name}" apagado.`);
