@@ -20,6 +20,7 @@ type Cache = {
   members: Member[];
   scheduleTypes: ScheduleType[];
   entries: ScheduleEntry[];
+  tasks?: { entry_date: string; title: string; done?: boolean }[];
 };
 
 async function readSettings() {
@@ -48,12 +49,19 @@ async function fetchFresh(): Promise<Cache | null> {
       supabase.from('schedule_entries').select('member_id,schedule_type_id,entry_date').eq('family_id', fid),
     ]);
     if (m.error || ty.error || e.error) return cache;
+    // Try to also fetch tasks (silent fail if RPC/permissions issue)
+    let tasksData: any[] = [];
+    try {
+      const tk = await supabase.from('tasks').select('entry_date,title,done').eq('family_id', fid);
+      tasksData = tk.data ?? [];
+    } catch {}
     const fresh: Cache = {
       familyId: fid,
       familyName: cache?.familyName || '',
       members: m.data ?? [],
       scheduleTypes: ty.data ?? [],
       entries: e.data ?? [],
+      tasks: tasksData,
     };
     await storage.setItem(WIDGET_CACHE_KEY, JSON.stringify(fresh));
     return fresh;
@@ -86,7 +94,7 @@ function renderAgenda(props: WidgetTaskHandlerProps, cache: Cache | null, dayOff
 
 function renderWeek(props: WidgetTaskHandlerProps, cache: Cache | null, transparent: boolean) {
   if (!cache) {
-    props.renderWidget(<AgendaWeekWidget memberNames={[]} memberColors={[]} weekStart={new Date().toISOString()} matrix={[]} transparent={transparent} />);
+    props.renderWidget(<AgendaWeekWidget memberNames={[]} memberColors={[]} weekStart={new Date().toISOString()} matrix={[]} tasksByDay={[]} transparent={transparent} />);
     return;
   }
   const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
@@ -101,12 +109,20 @@ function renderWeek(props: WidgetTaskHandlerProps, cache: Cache | null, transpar
       return { typeColor: t.color, typeName: t.code };
     });
   });
+  const tasks = cache.tasks || [];
+  const tasksByDay = days.map((d) => {
+    const ds = format(d, 'yyyy-MM-dd');
+    const dayTasks = tasks.filter((tk) => tk.entry_date === ds);
+    const undone = dayTasks.find((tk) => !tk.done);
+    return (undone || dayTasks[0])?.title ?? null;
+  });
   props.renderWidget(
     <AgendaWeekWidget
       memberNames={cache.members.map((m) => m.name)}
       memberColors={cache.members.map((m) => m.color)}
       weekStart={weekStart.toISOString()}
       matrix={matrix}
+      tasksByDay={tasksByDay}
       transparent={transparent}
     />
   );

@@ -1,9 +1,8 @@
-import { addDays, format, startOfWeek, isToday } from 'date-fns';
+import { addDays, format, isToday } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { FlexWidget, TextWidget } from 'react-native-android-widget';
 
 export type WeekCell = {
-  // For each [day][member] combination
   typeColor: string;
   typeName: string; // short code, e.g. "INF"
 };
@@ -12,11 +11,16 @@ export type AgendaWeekPayload = {
   memberNames: string[];     // columns
   memberColors: string[];    // columns
   weekStart: string;         // ISO date string
-  // matrix[dayIndex][memberIndex] - 7 rows × N cols
-  matrix: (WeekCell | null)[][];
+  matrix: (WeekCell | null)[][]; // matrix[dayIndex][memberIndex]
+  // tasksByDay[dayIndex] = first task title for that day (string) or null
+  tasksByDay?: (string | null)[];
   transparent?: boolean;
 };
 
+/**
+ * Vista semanal — preenche todo o espaço disponível com flex,
+ * mostra primeira tarefa esporádica de cada dia abaixo do número.
+ */
 export function AgendaWeekWidget(props: AgendaWeekPayload) {
   const transparent = !!props.transparent;
   const containerBg = transparent ? '#00000000' : '#FDFDF9';
@@ -27,6 +31,7 @@ export function AgendaWeekWidget(props: AgendaWeekPayload) {
 
   const weekStartDate = new Date(props.weekStart);
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStartDate, i));
+  const tasksByDay = props.tasksByDay || [];
 
   return (
     <FlexWidget
@@ -39,10 +44,19 @@ export function AgendaWeekWidget(props: AgendaWeekPayload) {
         flexDirection: 'column',
       }}
     >
-      {/* Header row: empty cell + member columns */}
-      <FlexWidget style={{ flexDirection: 'row', height: 22 }}>
-        <FlexWidget style={{ width: 38, justifyContent: 'center', alignItems: 'center', backgroundColor: headBg, borderRadius: 6, marginRight: 2 }}>
-          <TextWidget text="·" style={{ fontSize: 10, color: subColor, fontWeight: '700' }} />
+      {/* Header row */}
+      <FlexWidget style={{ flexDirection: 'row', height: 28 }}>
+        <FlexWidget
+          style={{
+            width: 56,
+            justifyContent: 'center',
+            alignItems: 'center',
+            backgroundColor: headBg,
+            borderRadius: 6,
+            marginRight: 2,
+          }}
+        >
+          <TextWidget text="•" style={{ fontSize: 12, color: subColor, fontWeight: '700' }} />
         </FlexWidget>
         {props.memberNames.map((name, mi) => (
           <FlexWidget
@@ -54,36 +68,48 @@ export function AgendaWeekWidget(props: AgendaWeekPayload) {
               marginHorizontal: 1,
               alignItems: 'center',
               justifyContent: 'center',
+              padding: 2,
             }}
           >
-            <TextWidget text={name.slice(0, 6)} style={{ fontSize: 9, fontWeight: '800', color: textColor }} />
+            <TextWidget
+              text={name.length > 8 ? name.slice(0, 7) + '…' : name}
+              style={{ fontSize: 11, fontWeight: '800', color: textColor }}
+            />
           </FlexWidget>
         ))}
       </FlexWidget>
 
-      {/* Rows: one per day */}
+      {/* Rows: one per day — flex:1 so they spread evenly */}
       {days.map((d, di) => {
         const today = isToday(d);
+        const firstTask = tasksByDay[di];
         return (
           <FlexWidget key={di} style={{ flexDirection: 'row', flex: 1, marginTop: 2 }}>
             <FlexWidget
               style={{
-                width: 38,
+                width: 56,
                 backgroundColor: today ? '#FF8FA3' : headBg,
                 borderRadius: 6,
                 marginRight: 2,
                 alignItems: 'center',
                 justifyContent: 'center',
+                padding: 2,
               }}
             >
               <TextWidget
-                text={format(d, 'EEEEE', { locale: pt }).toUpperCase()}
-                style={{ fontSize: 9, fontWeight: '800', color: today ? '#FFFFFF' : subColor }}
+                text={format(d, 'EEE', { locale: pt }).toUpperCase()}
+                style={{ fontSize: 10, fontWeight: '800', color: today ? '#FFFFFF' : subColor }}
               />
               <TextWidget
                 text={format(d, 'd')}
-                style={{ fontSize: 11, fontWeight: '800', color: today ? '#FFFFFF' : textColor }}
+                style={{ fontSize: 14, fontWeight: '800', color: today ? '#FFFFFF' : textColor }}
               />
+              {firstTask ? (
+                <TextWidget
+                  text={firstTask.length > 8 ? firstTask.slice(0, 7) + '…' : firstTask}
+                  style={{ fontSize: 8, fontWeight: '600', color: today ? '#FFFFFF' : subColor, marginTop: 1 }}
+                />
+              ) : null}
             </FlexWidget>
             {props.memberNames.map((_, mi) => {
               const cell = props.matrix[di]?.[mi];
@@ -99,7 +125,10 @@ export function AgendaWeekWidget(props: AgendaWeekPayload) {
                     justifyContent: 'center',
                   }}
                 >
-                  <TextWidget text={cell?.typeName || ''} style={{ fontSize: 9, fontWeight: '700', color: textColor }} />
+                  <TextWidget
+                    text={cell?.typeName || ''}
+                    style={{ fontSize: 11, fontWeight: '800', color: textColor }}
+                  />
                 </FlexWidget>
               );
             })}

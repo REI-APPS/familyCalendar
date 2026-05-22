@@ -67,10 +67,10 @@
               "name": "AgendaWeek",
               "label": "Agenda · Semana",
               "description": "Vista semanal: dia por linha, membro por coluna.",
-              "minWidth": "250dp",
-              "minHeight": "180dp",
+              "minWidth": "280dp",
+              "minHeight": "260dp",
               "targetCellWidth": 4,
-              "targetCellHeight": 4,
+              "targetCellHeight": 5,
               "previewImage": "./assets/images/icon.png",
               "updatePeriodMillis": 1800000,
               "resizeMode": "horizontal|vertical"
