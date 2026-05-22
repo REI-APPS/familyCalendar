@@ -1,38 +1,128 @@
-import { WidgetTaskHandlerProps } from 'react-native-android-widget';
+import type { WidgetTaskHandlerProps } from 'react-native-android-widget';
+import { addDays, format, startOfWeek } from 'date-fns';
 import { AgendaWidget } from '../widgets/AgendaWidget';
 import { AgendaWeekWidget } from '../widgets/AgendaWeekWidget';
+import { supabase } from '../lib/supabase';
+import { storage } from '../utils/storage';
 
-// Placeholders rendered when widget is first added — JS side updates content after.
-const TODAY_PLACEHOLDER = {
-  familyName: 'Agenda da Família',
-  dayOffset: 0,
-  entries: [],
-  transparent: false,
+// Cache key used by the app to persist the latest widget payload
+const WIDGET_CACHE_KEY = 'widget_data_cache';
+const WIDGET_DAY_KEY = 'widget_day_offset';
+const WIDGET_TRANSPARENT_KEY = 'widget_transparent';
+
+type Member = { id: string; name: string; color: string };
+type ScheduleType = { id: string; code: string; name: string; description?: string | null; color: string };
+type ScheduleEntry = { member_id: string; schedule_type_id: string; entry_date: string };
+
+type Cache = {
+  familyId: string;
+  familyName: string;
+  members: Member[];
+  scheduleTypes: ScheduleType[];
+  entries: ScheduleEntry[];
 };
 
-const WEEK_PLACEHOLDER = {
-  memberNames: [],
-  memberColors: [],
-  weekStart: new Date().toISOString(),
-  matrix: [],
-  transparent: false,
-};
+async function readSettings() {
+  const dayStr = await storage.getItem(WIDGET_DAY_KEY, '0');
+  const transStr = await storage.getItem(WIDGET_TRANSPARENT_KEY, 'false');
+  return {
+    dayOffset: Number(dayStr) || 0,
+    transparent: transStr === 'true',
+  };
+}
+
+async function readCache(): Promise<Cache | null> {
+  const raw = await storage.getItem(WIDGET_CACHE_KEY, '');
+  if (!raw) return null;
+  try { return JSON.parse(raw); } catch { return null; }
+}
+
+async function fetchFresh(): Promise<Cache | null> {
+  try {
+    const cache = await readCache();
+    const fid = cache?.familyId;
+    if (!fid) return cache;
+    const [m, ty, e] = await Promise.all([
+      supabase.from('members').select('id,name,color').eq('family_id', fid),
+      supabase.from('schedule_types').select('id,code,name,description,color').eq('family_id', fid),
+      supabase.from('schedule_entries').select('member_id,schedule_type_id,entry_date').eq('family_id', fid),
+    ]);
+    if (m.error || ty.error || e.error) return cache;
+    const fresh: Cache = {
+      familyId: fid,
+      familyName: cache?.familyName || '',
+      members: m.data ?? [],
+      scheduleTypes: ty.data ?? [],
+      entries: e.data ?? [],
+    };
+    await storage.setItem(WIDGET_CACHE_KEY, JSON.stringify(fresh));
+    return fresh;
+  } catch {
+    return await readCache();
+  }
+}
+
+function renderAgenda(props: WidgetTaskHandlerProps, cache: Cache | null, dayOffset: number, transparent: boolean) {
+  if (!cache) {
+    props.renderWidget(<AgendaWidget familyName="" dayOffset={dayOffset} entries={[]} transparent={transparent} />);
+    return;
+  }
+  const ds = format(addDays(new Date(), dayOffset), 'yyyy-MM-dd');
+  const dayEntries = cache.entries.filter((x) => x.entry_date === ds);
+  const widgetEntries = cache.members.map((m) => {
+    const ex = dayEntries.find((x) => x.member_id === m.id);
+    const tt = ex ? cache.scheduleTypes.find((t) => t.id === ex.schedule_type_id) : null;
+    return {
+      memberName: m.name,
+      memberColor: m.color,
+      typeName: tt ? (tt.description || tt.name) : 'Sem horário',
+      typeColor: tt?.color || (transparent ? '#FFFFFF44' : '#F5F3EC'),
+    };
+  });
+  props.renderWidget(
+    <AgendaWidget familyName={cache.familyName} dayOffset={dayOffset} entries={widgetEntries} transparent={transparent} />
+  );
+}
+
+function renderWeek(props: WidgetTaskHandlerProps, cache: Cache | null, transparent: boolean) {
+  if (!cache) {
+    props.renderWidget(<AgendaWeekWidget memberNames={[]} memberColors={[]} weekStart={new Date().toISOString()} matrix={[]} transparent={transparent} />);
+    return;
+  }
+  const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
+  const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+  const matrix = days.map((d) => {
+    const ds = format(d, 'yyyy-MM-dd');
+    return cache.members.map((m) => {
+      const ex = cache.entries.find((x) => x.member_id === m.id && x.entry_date === ds);
+      if (!ex) return null;
+      const t = cache.scheduleTypes.find((tt) => tt.id === ex.schedule_type_id);
+      if (!t) return null;
+      return { typeColor: t.color, typeName: t.code };
+    });
+  });
+  props.renderWidget(
+    <AgendaWeekWidget
+      memberNames={cache.members.map((m) => m.name)}
+      memberColors={cache.members.map((m) => m.color)}
+      weekStart={weekStart.toISOString()}
+      matrix={matrix}
+      transparent={transparent}
+    />
+  );
+}
 
 export async function widgetTaskHandler(props: WidgetTaskHandlerProps) {
-  const widgetInfo = props.widgetInfo;
-  switch (props.widgetAction) {
-    case 'WIDGET_ADDED':
-    case 'WIDGET_UPDATE':
-    case 'WIDGET_RESIZED':
-      if (widgetInfo.widgetName === 'Agenda') {
-        props.renderWidget(<AgendaWidget {...TODAY_PLACEHOLDER} />);
-      } else if (widgetInfo.widgetName === 'AgendaWeek') {
-        props.renderWidget(<AgendaWeekWidget {...WEEK_PLACEHOLDER} />);
-      }
-      break;
-    case 'WIDGET_DELETED':
-      break;
-    default:
-      break;
+  const { widgetInfo, widgetAction } = props;
+  const { dayOffset, transparent } = await readSettings();
+
+  // For refresh clicks, try to fetch fresh data from Supabase
+  const isRefresh = widgetAction === 'WIDGET_CLICK' && (props as any).clickAction === 'REFRESH_AGENDA';
+  const cache = isRefresh ? await fetchFresh() : await readCache();
+
+  if (widgetInfo.widgetName === 'Agenda') {
+    renderAgenda(props, cache, dayOffset, transparent);
+  } else if (widgetInfo.widgetName === 'AgendaWeek') {
+    renderWeek(props, cache, transparent);
   }
 }

@@ -168,5 +168,12 @@
     "family_name": "Family Name",
     "placeholder": "Smith Family",
     "create_error": "Could not create the family. Make sure the SQL was applied."
+  },
+  "tasks": {
+    "header": "TASKS",
+    "empty": "No tasks for this day",
+    "placeholder": "Add a quick task…",
+    "delete_title": "Delete task?",
+    "delete_msg": "Delete \"{{title}}\"?"
   }
 }

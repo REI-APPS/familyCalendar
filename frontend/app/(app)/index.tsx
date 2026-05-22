@@ -9,6 +9,7 @@ import { supabase } from '../../src/lib/supabase';
 import { colors, radius, spacing } from '../../src/lib/theme';
 import { SwipeNav } from '../../src/lib/SwipeNav';
 import { currentDateLocale } from '../../src/i18n';
+import { DayTasks } from '../../src/lib/DayTasks';
 
 export default function Today() {
   const { t } = useTranslation();
@@ -120,6 +121,9 @@ export default function Today() {
               );
             })
           )}
+
+          {/* Tasks esporádicas do dia */}
+          <DayTasks date={dateStr} />
         </ScrollView>
       </SwipeNav>
 

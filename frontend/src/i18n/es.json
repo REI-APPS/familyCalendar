@@ -168,5 +168,12 @@
     "family_name": "Nombre de la Familia",
     "placeholder": "Familia García",
     "create_error": "No se pudo crear la familia. Verifica que el SQL se haya aplicado."
+  },
+  "tasks": {
+    "header": "TAREAS",
+    "empty": "Sin tareas para este día",
+    "placeholder": "Añadir tarea rápida…",
+    "delete_title": "¿Eliminar tarea?",
+    "delete_msg": "¿Eliminar \"{{title}}\"?"
   }
 }

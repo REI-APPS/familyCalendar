@@ -1,11 +1,13 @@
 import { Platform } from 'react-native';
 import { addDays, format, startOfWeek } from 'date-fns';
+import { storage } from '../utils/storage';
 
 export type Member = { id: string; name: string; color: string };
 export type ScheduleType = { id: string; code: string; name: string; description?: string | null; color: string };
 export type ScheduleEntry = { member_id: string; schedule_type_id: string; entry_date: string };
 
 type Opts = {
+  familyId?: string;
   familyName: string;
   members: Member[];
   scheduleTypes: ScheduleType[];
@@ -13,6 +15,26 @@ type Opts = {
   dayOffset?: number;
   transparent?: boolean;
 };
+
+const WIDGET_CACHE_KEY = 'widget_data_cache';
+
+// Persist the latest payload so the headless task handler can re-render
+// from cache (or fetch fresh) without going through the React app.
+async function persistCache(opts: Opts) {
+  if (!opts.familyId) return;
+  try {
+    await storage.setItem(
+      WIDGET_CACHE_KEY,
+      JSON.stringify({
+        familyId: opts.familyId,
+        familyName: opts.familyName,
+        members: opts.members.map((m) => ({ id: m.id, name: m.name, color: m.color })),
+        scheduleTypes: opts.scheduleTypes.map((t) => ({ id: t.id, code: t.code, name: t.name, description: t.description, color: t.color })),
+        entries: opts.entries.map((e) => ({ member_id: e.member_id, schedule_type_id: e.schedule_type_id, entry_date: e.entry_date })),
+      })
+    );
+  } catch {}
+}
 
 // Update the Today (Agenda) widget
 export async function updateAgendaWidget(opts: Opts) {
@@ -90,6 +112,7 @@ export async function updateAgendaWeekWidget(opts: Opts) {
 
 // Convenience: update both at once
 export async function updateAllWidgets(opts: Opts) {
+  await persistCache(opts);
   await updateAgendaWidget(opts);
   await updateAgendaWeekWidget(opts);
 }

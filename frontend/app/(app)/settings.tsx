@@ -54,6 +54,7 @@ export default function Settings() {
   useEffect(() => {
     if (!family) return;
     updateAllWidgets({
+      familyId: family.id,
       familyName: family.name,
       members, scheduleTypes, entries,
       dayOffset: widgetDay,
