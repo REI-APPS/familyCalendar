@@ -35,7 +35,7 @@ export default function Settings() {
   const { t, i18n } = useTranslation();
   const confirm = useConfirm();
   const { user, signOut } = useAuth();
-  const { family, families, members, scheduleTypes, entries, selectFamily, refresh } = useFamily();
+  const { family, families, members, scheduleTypes, entries, tasks, selectFamily, refresh } = useFamily();
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [sending, setSending] = useState(false);
@@ -56,11 +56,11 @@ export default function Settings() {
     updateAllWidgets({
       familyId: family.id,
       familyName: family.name,
-      members, scheduleTypes, entries,
+      members, scheduleTypes, entries, tasks,
       dayOffset: widgetDay,
       transparent,
     });
-  }, [family, members, scheduleTypes, entries, widgetDay, transparent]);
+  }, [family, members, scheduleTypes, entries, tasks, widgetDay, transparent]);
 
   const onSelectWidgetDay = async (offset: number) => {
     setWidgetDay(offset);
