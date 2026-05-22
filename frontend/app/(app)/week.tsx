@@ -9,12 +9,14 @@ import { useFamily } from '../../src/contexts/FamilyContext';
 import { supabase } from '../../src/lib/supabase';
 import { colors, radius, spacing } from '../../src/lib/theme';
 import { SwipeNav } from '../../src/lib/SwipeNav';
+import { DayTasks } from '../../src/lib/DayTasks';
 
 export default function WeekView() {
   const { t } = useTranslation();
   const { family, members, scheduleTypes, memberScheduleTypes, entries, refresh } = useFamily();
   const [cursor, setCursor] = useState(new Date());
   const [editing, setEditing] = useState<{ memberId: string; date: Date } | null>(null);
+  const [selectedDay, setSelectedDay] = useState<Date>(new Date());
   const { width } = useWindowDimensions();
 
   // Layout: 7 columns + 1 member column inside available width
@@ -128,7 +130,36 @@ export default function WeekView() {
             <Text style={{ color: colors.textSecondary, padding: 24 }}>Sem membros. Adiciona em "Membros".</Text>
           )}
 
-          <Text style={styles.swipeHint}>← desliza para mudar de semana →</Text>
+          <Text style={styles.swipeHint}>{t('week.swipe_hint')}</Text>
+
+          {/* Tasks esporádicas do dia seleccionado */}
+          <View style={{ marginTop: 12 }}>
+            <Text style={styles.taskDayLabel}>
+              {format(selectedDay, "EEEE, d MMM", { locale: currentDateLocale() })}
+            </Text>
+            <View style={styles.daysSelector}>
+              {days.map((d) => (
+                <TouchableOpacity
+                  key={d.toISOString()}
+                  onPress={() => setSelectedDay(d)}
+                  style={[
+                    styles.daySelectorPill,
+                    isSameDay(d, selectedDay) && { backgroundColor: colors.brand },
+                  ]}
+                >
+                  <Text style={[
+                    styles.daySelectorText,
+                    isSameDay(d, selectedDay) && { color: '#fff' },
+                  ]}>{format(d, 'EEEEE', { locale: currentDateLocale() }).toUpperCase()}</Text>
+                  <Text style={[
+                    styles.daySelectorDate,
+                    isSameDay(d, selectedDay) && { color: '#fff' },
+                  ]}>{format(d, 'd')}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <DayTasks date={format(selectedDay, 'yyyy-MM-dd')} />
+          </View>
         </ScrollView>
       </SwipeNav>
 
@@ -194,6 +225,11 @@ const styles = StyleSheet.create({
   cellToday: { borderColor: colors.brand, borderWidth: 2 },
   cellCode: { fontWeight: '800', color: colors.textPrimary, fontSize: 11 },
   swipeHint: { textAlign: 'center', color: colors.textSecondary, fontSize: 11, marginTop: 16, fontStyle: 'italic' },
+  taskDayLabel: { fontSize: 13, fontWeight: '800', color: colors.textPrimary, textAlign: 'center', marginTop: 8, marginBottom: 8, textTransform: 'capitalize' },
+  daysSelector: { flexDirection: 'row', justifyContent: 'space-between', gap: 4, marginBottom: 8 },
+  daySelectorPill: { flex: 1, alignItems: 'center', paddingVertical: 6, borderRadius: radius.md, backgroundColor: colors.surfaceSecondary },
+  daySelectorText: { fontSize: 9, fontWeight: '800', color: colors.textSecondary },
+  daySelectorDate: { fontSize: 14, fontWeight: '800', color: colors.textPrimary, marginTop: 2 },
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   sheet: { backgroundColor: colors.surface, padding: spacing.lg, paddingBottom: spacing.xl + 16, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg },
   sheetTitle: { fontSize: 18, fontWeight: '800', color: colors.textPrimary, textAlign: 'center', textTransform: 'capitalize' },

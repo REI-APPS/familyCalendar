@@ -10,6 +10,7 @@ import { useFamily } from '../../src/contexts/FamilyContext';
 import { colors, radius, spacing } from '../../src/lib/theme';
 import { SwipeNav } from '../../src/lib/SwipeNav';
 import { currentDateLocale } from '../../src/i18n';
+import { DayTasks } from '../../src/lib/DayTasks';
 
 const WEEKDAYS = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
 
@@ -130,6 +131,7 @@ export default function MonthView() {
                   </View>
                 );
               })}
+              {popupDate && <DayTasks date={format(popupDate, 'yyyy-MM-dd')} compact />}
             </ScrollView>
             <TouchableOpacity onPress={() => setPopupDate(null)} style={styles.closeBtn}><Text style={styles.closeBtnTxt}>{t('month.close')}</Text></TouchableOpacity>
           </TouchableOpacity>

@@ -69,12 +69,16 @@ export function AgendaWidget(props: WidgetPayload) {
         alignItems: 'center',
       }}
     >
-      <FlexWidget style={{ flexDirection: 'column', marginRight: 8, justifyContent: 'center', width: 60 }}>
+      <FlexWidget
+        clickAction="REFRESH_AGENDA"
+        style={{ flexDirection: 'column', marginRight: 8, justifyContent: 'center', width: 60, padding: 4, borderRadius: 8 }}
+      >
         <TextWidget text={dayLabel} style={{ fontSize: 11, color: headTextColor, fontWeight: '800', letterSpacing: 0.5 }} />
         <TextWidget
           text={format(addDays(new Date(), props.dayOffset), 'dd MMM', { locale: pt }).toUpperCase()}
           style={{ fontSize: 9, color: subTextColor, fontWeight: '700' }}
         />
+        <TextWidget text="↻ refresh" style={{ fontSize: 8, color: subTextColor, fontWeight: '700', marginTop: 2 }} />
       </FlexWidget>
 
       {entries.length === 0 ? (

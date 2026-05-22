@@ -168,5 +168,12 @@
     "family_name": "Nome da Família",
     "placeholder": "Família Silva",
     "create_error": "Não foi possível criar a família. Verifica se o SQL foi aplicado."
+  },
+  "tasks": {
+    "header": "TAREFAS",
+    "empty": "Sem tarefas para este dia",
+    "placeholder": "Adicionar tarefa rápida…",
+    "delete_title": "Apagar tarefa?",
+    "delete_msg": "Apagar \"{{title}}\"?"
   }
 }

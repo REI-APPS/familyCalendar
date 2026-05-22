@@ -7,6 +7,7 @@ export type Member = { id: string; family_id: string; user_id: string | null; na
 export type ScheduleType = { id: string; family_id: string; code: string; name: string; description: string | null; color: string };
 export type MemberScheduleType = { id: string; member_id: string; schedule_type_id: string };
 export type ScheduleEntry = { id: string; family_id: string; member_id: string; schedule_type_id: string; entry_date: string; period: string; notes: string | null };
+export type Task = { id: string; family_id: string; entry_date: string; title: string; done: boolean; created_by: string | null; created_at: string };
 
 type FamilyCtx = {
   loading: boolean;
@@ -16,6 +17,7 @@ type FamilyCtx = {
   scheduleTypes: ScheduleType[];
   memberScheduleTypes: MemberScheduleType[];
   entries: ScheduleEntry[];
+  tasks: Task[];
   selectFamily: (id: string) => void;
   refresh: () => Promise<void>;
   createFamilyWithDefaults: (name: string) => Promise<string | null>;
@@ -32,6 +34,7 @@ export function FamilyProvider({ children }: { children: React.ReactNode }) {
   const [scheduleTypes, setScheduleTypes] = useState<ScheduleType[]>([]);
   const [memberScheduleTypes, setMemberScheduleTypes] = useState<MemberScheduleType[]>([]);
   const [entries, setEntries] = useState<ScheduleEntry[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
 
   const loadFamilies = useCallback(async () => {
     if (!user) {
@@ -55,23 +58,25 @@ export function FamilyProvider({ children }: { children: React.ReactNode }) {
   }, [user, family]);
 
   const loadFamilyData = useCallback(async (fid: string) => {
-    const [m, t, mst, e] = await Promise.all([
+    const [m, ty, mst, e, tk] = await Promise.all([
       supabase.from('members').select('*').eq('family_id', fid).order('created_at'),
       supabase.from('schedule_types').select('*').eq('family_id', fid).order('code'),
       supabase.from('member_schedule_types').select('*'),
       supabase.from('schedule_entries').select('*').eq('family_id', fid),
+      supabase.from('tasks').select('*').eq('family_id', fid).order('entry_date'),
     ]);
     setMembers(m.data ?? []);
-    setScheduleTypes(t.data ?? []);
+    setScheduleTypes(ty.data ?? []);
     setMemberScheduleTypes(mst.data ?? []);
     setEntries(e.data ?? []);
+    setTasks(tk.data ?? []);
   }, []);
 
   useEffect(() => { loadFamilies(); }, [loadFamilies]);
 
   useEffect(() => {
     if (family) loadFamilyData(family.id);
-    else { setMembers([]); setScheduleTypes([]); setEntries([]); setMemberScheduleTypes([]); }
+    else { setMembers([]); setScheduleTypes([]); setEntries([]); setMemberScheduleTypes([]); setTasks([]); }
   }, [family, loadFamilyData]);
 
   // Realtime subscriptions
@@ -82,6 +87,7 @@ export function FamilyProvider({ children }: { children: React.ReactNode }) {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'schedule_entries', filter: `family_id=eq.${family.id}` }, () => loadFamilyData(family.id))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'members', filter: `family_id=eq.${family.id}` }, () => loadFamilyData(family.id))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'schedule_types', filter: `family_id=eq.${family.id}` }, () => loadFamilyData(family.id))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks', filter: `family_id=eq.${family.id}` }, () => loadFamilyData(family.id))
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [family, loadFamilyData]);
@@ -105,7 +111,7 @@ export function FamilyProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <Ctx.Provider
-      value={{ loading, family, families, members, scheduleTypes, memberScheduleTypes, entries, selectFamily, refresh, createFamilyWithDefaults }}
+      value={{ loading, family, families, members, scheduleTypes, memberScheduleTypes, entries, tasks, selectFamily, refresh, createFamilyWithDefaults }}
     >
       {children}
     </Ctx.Provider>
