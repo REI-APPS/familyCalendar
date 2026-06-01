@@ -12,6 +12,15 @@ import { ConfirmProvider } from '../src/lib/ConfirmProvider';
 import { hydrateLanguage } from '../src/i18n';
 import '../widget-task-handler';
 
+// In production builds silence console output to avoid leaking IDs/structure
+// in logs that could be captured on rooted devices.
+if (!__DEV__) {
+  // eslint-disable-next-line no-console
+  console.log = () => {};
+  // eslint-disable-next-line no-console
+  console.warn = () => {};
+}
+
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 SplashScreen.preventAutoHideAsync().catch(() => {});

@@ -120,9 +120,49 @@ export async function updateAgendaWeekWidget(opts: Opts) {
   }
 }
 
-// Convenience: update both at once
+// Update the AgendaPlus (today + 4 tasks) widget
+export async function updateAgendaPlusWidget(opts: Opts) {
+  if (Platform.OS !== 'android') return;
+  try {
+    const { requestWidgetUpdate } = require('react-native-android-widget');
+    const { AgendaPlusWidget } = require('../widgets/AgendaPlusWidget');
+
+    const { familyName, members, scheduleTypes, entries, tasks = [], dayOffset = 0, transparent = false } = opts;
+    const ds = format(addDays(new Date(), dayOffset), 'yyyy-MM-dd');
+    const dayEntries = entries.filter((e) => e.entry_date === ds);
+
+    const widgetEntries = members.map((m) => {
+      const ex = dayEntries.find((e) => e.member_id === m.id);
+      const t = ex ? scheduleTypes.find((tt) => tt.id === ex.schedule_type_id) : null;
+      return {
+        memberName: m.name,
+        memberColor: m.color,
+        typeName: t ? (t.description || t.name) : 'Sem horário',
+        typeColor: t?.color || (transparent ? '#FFFFFF44' : '#F5F3EC'),
+      };
+    });
+
+    const dayTasks = tasks.filter((tk) => tk.entry_date === ds);
+    const undone = dayTasks.filter((tk) => !tk.done);
+    const done = dayTasks.filter((tk) => !!tk.done);
+    const topTasks = [...undone, ...done].slice(0, 4).map((tk) => ({ title: tk.title, done: !!tk.done }));
+
+    const payload = { familyName, dayOffset, entries: widgetEntries, tasks: topTasks, transparent };
+
+    await requestWidgetUpdate({
+      widgetName: 'AgendaPlus',
+      renderWidget: () => <AgendaPlusWidget {...payload} />,
+      widgetNotFound: () => {},
+    });
+  } catch (e) {
+    // Library not available — ignore
+  }
+}
+
+// Convenience: update all three widgets at once
 export async function updateAllWidgets(opts: Opts) {
   await persistCache(opts);
   await updateAgendaWidget(opts);
   await updateAgendaWeekWidget(opts);
+  await updateAgendaPlusWidget(opts);
 }

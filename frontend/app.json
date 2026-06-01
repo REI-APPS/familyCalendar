@@ -77,10 +77,23 @@
               "previewImage": "./assets/images/icon.png",
               "updatePeriodMillis": 1800000,
               "resizeMode": "horizontal|vertical"
+            },
+            {
+              "name": "AgendaPlus",
+              "label": "Agenda · Hoje + Tarefas",
+              "description": "Agenda de hoje numa linha e 4 tarefas na outra.",
+              "minWidth": "280dp",
+              "minHeight": "120dp",
+              "targetCellWidth": 4,
+              "targetCellHeight": 2,
+              "previewImage": "./assets/images/icon.png",
+              "updatePeriodMillis": 1800000,
+              "resizeMode": "horizontal|vertical"
             }
           ]
         }
-      ]
+      ],
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true
