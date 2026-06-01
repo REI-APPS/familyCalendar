@@ -47,6 +47,7 @@ export function AgendaWeekWidget(props: AgendaWeekPayload) {
       {/* Header row */}
       <FlexWidget style={{ flexDirection: 'row', height: 28 }}>
         <FlexWidget
+          clickAction="REFRESH_AGENDA"
           style={{
             width: 56,
             justifyContent: 'center',
@@ -56,7 +57,7 @@ export function AgendaWeekWidget(props: AgendaWeekPayload) {
             marginRight: 2,
           }}
         >
-          <TextWidget text="•" style={{ fontSize: 12, color: subColor, fontWeight: '700' }} />
+          <TextWidget text="↻" style={{ fontSize: 14, color: textColor, fontWeight: '800' }} />
         </FlexWidget>
         {props.memberNames.map((name, mi) => (
           <FlexWidget
