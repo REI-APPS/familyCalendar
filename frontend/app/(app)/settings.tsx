@@ -13,6 +13,7 @@ import { storage } from '../../src/utils/storage';
 import { sendInviteEmail } from '../../src/lib/resend';
 import { setAppLanguage, Lang } from '../../src/i18n';
 import { useConfirm } from '../../src/lib/ConfirmProvider';
+import { RegisteredUsers } from '../../src/lib/RegisteredUsers';
 
 const WIDGET_DAY_KEY = 'widget_day_offset';
 const WIDGET_TRANSPARENT_KEY = 'widget_transparent';
@@ -190,6 +191,9 @@ export default function Settings() {
             <Text style={styles.hint}>{t('settings.invite_hint', { from: INVITE_FROM })}</Text>
           </View>
         )}
+
+        {/* Registered users management */}
+        <RegisteredUsers />
 
         <View style={styles.card}>
           <Text style={styles.label}>{t('settings.widget_day')}</Text>

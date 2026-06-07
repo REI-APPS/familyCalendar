@@ -9,6 +9,7 @@
 // is in production, simply remove EXPO_PUBLIC_RESEND_KEY from EAS env vars.
 
 import { supabase } from './supabase';
+import i18n from '../i18n';
 
 const LEGACY_KEY = process.env.EXPO_PUBLIC_RESEND_KEY || '';
 const LEGACY_FROM = process.env.EXPO_PUBLIC_INVITE_FROM || 'onboarding@resend.dev';
@@ -19,10 +20,21 @@ const PLAY_STORE_URL =
 type Opts = { to: string; familyName: string; inviterEmail?: string };
 type Result = { ok: boolean; error?: string };
 
+function currentLocale(): 'pt' | 'en' | 'es' {
+  const lng = (i18n.language || 'pt').slice(0, 2).toLowerCase();
+  if (lng === 'en' || lng === 'es') return lng;
+  return 'pt';
+}
+
 async function sendViaEdgeFunction(opts: Opts): Promise<Result | null> {
   try {
     const { data, error } = await supabase.functions.invoke('send-invite', {
-      body: { to: opts.to, familyName: opts.familyName, inviterEmail: opts.inviterEmail },
+      body: {
+        to: opts.to,
+        familyName: opts.familyName,
+        inviterEmail: opts.inviterEmail,
+        locale: currentLocale(),
+      },
     });
     if (error) {
       // FunctionsHttpError exposes a `context` with the response. If the

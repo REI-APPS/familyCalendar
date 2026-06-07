@@ -98,10 +98,19 @@ export default function MonthView() {
                 <TouchableOpacity key={d.toISOString()} style={[styles.cell, today && styles.cellToday]} onPress={() => setPopupDate(d)} testID={`day-${format(d, 'yyyyMMdd')}`}>
                   <Text style={[styles.dayNum, today && styles.dayNumToday]}>{format(d, 'd')}</Text>
                   <View style={styles.dots}>
-                    {dayEs.slice(0, 4).map((e) => {
-                      const t = scheduleTypes.find((tt) => tt.id === e.schedule_type_id);
-                      const m = members.find((mm) => mm.id === e.member_id);
-                      return <View key={e.id} style={[styles.dot, { backgroundColor: t?.color || m?.color || '#ccc' }]} />;
+                    {members.slice(0, 4).map((m) => {
+                      const e = dayEs.find((x) => x.member_id === m.id);
+                      const t = e ? scheduleTypes.find((tt) => tt.id === e.schedule_type_id) : null;
+                      // Reserve consistent slot — empty placeholder when no entry
+                      return (
+                        <View
+                          key={m.id}
+                          style={[
+                            styles.dot,
+                            e ? { backgroundColor: t?.color || m.color } : styles.dotEmpty,
+                          ]}
+                        />
+                      );
                     })}
                   </View>
                 </TouchableOpacity>
@@ -157,6 +166,7 @@ const styles = StyleSheet.create({
   dayNumToday: { color: colors.surface, backgroundColor: colors.brand, width: 26, height: 26, borderRadius: 13, textAlign: 'center', lineHeight: 26, overflow: 'hidden' },
   dots: { flexDirection: 'row', marginTop: 4, gap: 3, flexWrap: 'wrap', justifyContent: 'center' },
   dot: { width: 7, height: 7, borderRadius: 4 },
+  dotEmpty: { backgroundColor: 'transparent', borderWidth: 1, borderColor: '#E8E5DC', borderStyle: 'dashed' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: spacing.lg },
   popup: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.lg, maxHeight: '80%' },
   popupTitle: { fontSize: 18, fontWeight: '800', color: colors.textPrimary, textAlign: 'center', textTransform: 'capitalize', marginBottom: spacing.md },

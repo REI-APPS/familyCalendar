@@ -74,7 +74,7 @@ export function AgendaWeekWidget(props: AgendaWeekPayload) {
           >
             <TextWidget
               text={name.length > 8 ? name.slice(0, 7) + '…' : name}
-              style={{ fontSize: 11, fontWeight: '800', color: textColor }}
+              style={{ fontSize: 14, fontWeight: '800', color: textColor }}
             />
           </FlexWidget>
         ))}
@@ -99,16 +99,16 @@ export function AgendaWeekWidget(props: AgendaWeekPayload) {
             >
               <TextWidget
                 text={format(d, 'EEE', { locale: pt }).toUpperCase()}
-                style={{ fontSize: 10, fontWeight: '800', color: today ? '#FFFFFF' : subColor }}
+                style={{ fontSize: 13, fontWeight: '800', color: today ? '#FFFFFF' : subColor }}
               />
               <TextWidget
                 text={format(d, 'd')}
-                style={{ fontSize: 14, fontWeight: '800', color: today ? '#FFFFFF' : textColor }}
+                style={{ fontSize: 18, fontWeight: '800', color: today ? '#FFFFFF' : textColor }}
               />
               {firstTask ? (
                 <TextWidget
-                  text={firstTask.length > 8 ? firstTask.slice(0, 7) + '…' : firstTask}
-                  style={{ fontSize: 8, fontWeight: '600', color: today ? '#FFFFFF' : subColor, marginTop: 1 }}
+                  text={firstTask.length > 9 ? firstTask.slice(0, 8) + '…' : firstTask}
+                  style={{ fontSize: 11, fontWeight: '700', color: today ? '#FFFFFF' : subColor, marginTop: 1 }}
                 />
               ) : null}
             </FlexWidget>
@@ -128,7 +128,7 @@ export function AgendaWeekWidget(props: AgendaWeekPayload) {
                 >
                   <TextWidget
                     text={cell?.typeName || ''}
-                    style={{ fontSize: 11, fontWeight: '800', color: textColor }}
+                    style={{ fontSize: 14, fontWeight: '800', color: textColor }}
                   />
                 </FlexWidget>
               );

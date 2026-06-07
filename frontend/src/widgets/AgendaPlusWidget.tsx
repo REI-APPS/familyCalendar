@@ -38,7 +38,7 @@ export function AgendaPlusWidget(props: AgendaPlusPayload) {
   const cardTextColor = '#2D3142';
   const subTextColor = transparent ? '#FFFFFF' : '#7D8299';
   const headTextColor = transparent ? '#FFFFFF' : '#2D3142';
-  const cellEmptyBg = transparent ? '#FFFFFF22' : '#F5F3EC';
+  const cellEmptyBg = transparent ? '#FFFFFF1A' : '#EFE9D8';  // softer task background, slightly more visible
 
   const entries = props.entries.slice(0, 4); // max 4 schedules
   const tasksLeft = props.tasks.slice(0, 2);
@@ -58,8 +58,8 @@ export function AgendaPlusWidget(props: AgendaPlusPayload) {
         justifyContent: 'center',
       }}
     >
-      <TextWidget text={e.memberName} style={{ fontSize: 11, fontWeight: '800', color: cardTextColor }} />
-      <TextWidget text={e.typeName} style={{ fontSize: 9, color: cardTextColor, fontWeight: '600' }} />
+      <TextWidget text={e.memberName} style={{ fontSize: 15, fontWeight: '800', color: cardTextColor }} />
+      <TextWidget text={e.typeName} style={{ fontSize: 13, color: cardTextColor, fontWeight: '700' }} />
     </FlexWidget>
   );
 
@@ -78,7 +78,7 @@ export function AgendaPlusWidget(props: AgendaPlusPayload) {
     >
       <TextWidget
         text={(tk.done ? '✓ ' : '• ') + (tk.title.length > 18 ? tk.title.slice(0, 17) + '…' : tk.title)}
-        style={{ fontSize: 10, color: cardTextColor, fontWeight: '600' }}
+        style={{ fontSize: 14, color: cardTextColor, fontWeight: '700' }}
       />
     </FlexWidget>
   );

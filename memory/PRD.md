@@ -30,8 +30,20 @@ Cross-device family scheduling app with per-member daily schedule codes (e.g., I
 - `/app/frontend/app/(app)/members.tsx` — Members & Types management
 - `/app/frontend/app/(app)/settings.tsx` — Invites, family switcher, sign out
 
+## Recently shipped (Jun 2026)
+- i18n (EN/PT/ES) with persisted choice
+- Change password & Delete account flows
+- Sporadic Tasks (per-day to-dos) with DB-trigger logging
+- 3 native Android widgets: Today, Week, AgendaPlus
+- Edge Function `send-invite` (Resend) with **localized email** (PT/EN/ES)
+- Widget headless refresh with **token refresh fallback** (uses refresh_token when JWT expires)
+- Larger fonts in Week + AgendaPlus widgets; softer task background
+- Static member order across all views (sorted by `created_at`)
+- **Registered Users management** (admin can remove members of the family) — RPC `admin_remove_family_user`
+- **Recent Changes Alert** modal — shown once per change set when alterations happen in the next 14 days
+
 ## Pending / Next iterations
-1. **Provide real Supabase credentials** in `frontend/.env` and run the SQL.
-2. Android widget Kotlin code generation (config plugin) — only effective in production APK build.
-3. Google OAuth via Supabase Auth (when user requests).
-4. Email-based invite acceptance flow (deep link → auto-add to family).
+1. Run `/app/SUPABASE_USERS_AND_ALERTS.sql` in Supabase SQL Editor for users + alerts features.
+2. Redeploy edge function: `supabase functions deploy send-invite`.
+3. Issue an EAS build to validate widget headless refresh in real device (cannot be tested via Expo Go).
+4. (Optional) Add per-member sort_order column + drag-to-reorder UI.

@@ -175,5 +175,29 @@
     "placeholder": "Adicionar tarefa rápida…",
     "delete_title": "Apagar tarefa?",
     "delete_msg": "Apagar \"{{title}}\"?"
+  },
+  "users": {
+    "section_title": "Utilizadores registados",
+    "section_hint": "Pessoas com conta nesta família. Podes removê-las (apenas o dono).",
+    "no_users": "Ainda não há utilizadores registados além de ti.",
+    "owner": "Dono",
+    "member": "Membro",
+    "you": "Tu",
+    "remove": "Remover",
+    "remove_title": "Remover utilizador?",
+    "remove_msg": "Vais remover {{name}} ({{email}}) desta família. A conta dele não é apagada, apenas perde acesso.",
+    "removed": "Removido com sucesso.",
+    "only_owner": "Só o dono da família pode remover utilizadores."
+  },
+  "alerts": {
+    "title": "Alterações recentes",
+    "subtitle": "Mudanças nos próximos 14 dias desde a última vez que abriste a app",
+    "kind_schedule": "Agenda",
+    "kind_task": "Tarefa",
+    "action_insert": "criado",
+    "action_update": "atualizado",
+    "action_delete": "removido",
+    "got_it": "Ok, entendi",
+    "by_someone": "alguém"
   }
 }
