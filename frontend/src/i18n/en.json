@@ -175,5 +175,29 @@
     "placeholder": "Add a quick task…",
     "delete_title": "Delete task?",
     "delete_msg": "Delete \"{{title}}\"?"
+  },
+  "users": {
+    "section_title": "Registered users",
+    "section_hint": "People with an account in this family. Only the owner can remove them.",
+    "no_users": "No other registered users yet.",
+    "owner": "Owner",
+    "member": "Member",
+    "you": "You",
+    "remove": "Remove",
+    "remove_title": "Remove user?",
+    "remove_msg": "You're about to remove {{name}} ({{email}}) from this family. Their account is not deleted, only their access.",
+    "removed": "Removed successfully.",
+    "only_owner": "Only the family owner can remove users."
+  },
+  "alerts": {
+    "title": "Recent changes",
+    "subtitle": "Changes in the next 14 days since your last app open",
+    "kind_schedule": "Schedule",
+    "kind_task": "Task",
+    "action_insert": "added",
+    "action_update": "updated",
+    "action_delete": "removed",
+    "got_it": "Got it",
+    "by_someone": "someone"
   }
 }

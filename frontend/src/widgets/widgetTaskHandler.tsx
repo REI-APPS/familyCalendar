@@ -3,12 +3,17 @@ import { addDays, format, startOfWeek } from 'date-fns';
 import { AgendaWidget } from '../widgets/AgendaWidget';
 import { AgendaWeekWidget } from '../widgets/AgendaWeekWidget';
 import { AgendaPlusWidget } from '../widgets/AgendaPlusWidget';
-import { supabase } from '../lib/supabase';
 import { storage } from '../utils/storage';
 
 const WIDGET_CACHE_KEY = 'widget_data_cache';
 const WIDGET_DAY_KEY = 'widget_day_offset';
 const WIDGET_TRANSPARENT_KEY = 'widget_transparent';
+const TOKEN_CACHE_KEY = 'widget_access_token';
+const REFRESH_TOKEN_CACHE_KEY = 'widget_refresh_token';
+const TOKEN_EXP_CACHE_KEY = 'widget_access_token_exp';
+
+const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
+const SUPABASE_ANON = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
 
 type Member = { id: string; name: string; color: string };
 type ScheduleType = { id: string; code: string; name: string; description?: string | null; color: string };
@@ -27,10 +32,7 @@ type Cache = {
 async function readSettings() {
   const dayStr = await storage.getItem(WIDGET_DAY_KEY, '0');
   const transStr = await storage.getItem(WIDGET_TRANSPARENT_KEY, 'false');
-  return {
-    dayOffset: Number(dayStr) || 0,
-    transparent: transStr === 'true',
-  };
+  return { dayOffset: Number(dayStr) || 0, transparent: transStr === 'true' };
 }
 
 async function readCache(): Promise<Cache | null> {
@@ -39,60 +41,93 @@ async function readCache(): Promise<Cache | null> {
   try { return JSON.parse(raw); } catch { return null; }
 }
 
-/**
- * In a headless context the supabase client may not have rehydrated the
- * session yet — wait for getSession() to settle before issuing queries.
- * Returns true if there is a valid session.
- */
-async function ensureSession(): Promise<boolean> {
+/** Try to refresh the JWT using the stored refresh_token. */
+async function refreshAccessToken(): Promise<string | null> {
   try {
-    const { data, error } = await supabase.auth.getSession();
-    if (error) {
-      console.warn('[widget] getSession error:', error.message);
-      return false;
+    const rt = await storage.getItem(REFRESH_TOKEN_CACHE_KEY, '');
+    if (!rt) return null;
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_ANON,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ refresh_token: rt }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data?.access_token) {
+      await storage.setItem(TOKEN_CACHE_KEY, data.access_token as string);
+      if (data.refresh_token) await storage.setItem(REFRESH_TOKEN_CACHE_KEY, data.refresh_token as string);
+      if (data.expires_at) await storage.setItem(TOKEN_EXP_CACHE_KEY, Number(data.expires_at));
+      return data.access_token as string;
     }
-    return !!data?.session?.access_token;
-  } catch (e) {
-    console.warn('[widget] getSession threw', e);
-    return false;
+    return null;
+  } catch {
+    return null;
   }
+}
+
+/** Fetch directly via PostgREST + stored token — bypasses supabase-js init issues */
+async function rest(token: string, path: string): Promise<{ ok: boolean; status: number; data: any }> {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+      headers: {
+        apikey: SUPABASE_ANON,
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
+      },
+    });
+    const data = res.ok ? await res.json() : null;
+    return { ok: res.ok, status: res.status, data };
+  } catch {
+    return { ok: false, status: 0, data: null };
+  }
+}
+
+async function restWithRetry(token: string, path: string): Promise<any[]> {
+  let r = await rest(token, path);
+  if (r.ok) return r.data || [];
+  if (r.status === 401) {
+    const fresh = await refreshAccessToken();
+    if (fresh) {
+      r = await rest(fresh, path);
+      if (r.ok) return r.data || [];
+    }
+  }
+  return [];
 }
 
 async function fetchFresh(): Promise<Cache | null> {
   try {
     const cache = await readCache();
     const fid = cache?.familyId;
-    if (!fid) {
-      console.warn('[widget] no familyId in cache — open app first');
-      return cache;
+    if (!fid) return cache;
+    let token = await storage.getItem(TOKEN_CACHE_KEY, '');
+    if (!token) {
+      const fresh = await refreshAccessToken();
+      if (!fresh) return cache;
+      token = fresh;
     }
-    const ok = await ensureSession();
-    if (!ok) {
-      console.warn('[widget] no auth session — open app first');
-      return cache;
-    }
+
+    // Run requests independently so a single failure (e.g. tasks RLS) doesn't drop the whole refresh.
     const [m, ty, e, tk] = await Promise.all([
-      supabase.from('members').select('id,name,color').eq('family_id', fid),
-      supabase.from('schedule_types').select('id,code,name,description,color').eq('family_id', fid),
-      supabase.from('schedule_entries').select('member_id,schedule_type_id,entry_date').eq('family_id', fid),
-      supabase.from('tasks').select('entry_date,title,done').eq('family_id', fid).order('entry_date'),
+      restWithRetry(token, `members?family_id=eq.${fid}&select=id,name,color,created_at&order=created_at.asc.nullslast,name.asc`),
+      restWithRetry(token, `schedule_types?family_id=eq.${fid}&select=id,code,name,description,color`),
+      restWithRetry(token, `schedule_entries?family_id=eq.${fid}&select=member_id,schedule_type_id,entry_date`),
+      restWithRetry(token, `tasks?family_id=eq.${fid}&select=entry_date,title,done&order=entry_date.asc`),
     ]);
-    if (m.error || ty.error || e.error) {
-      console.warn('[widget] fetch failed', m.error || ty.error || e.error);
-      return cache;
-    }
     const fresh: Cache = {
       familyId: fid,
       familyName: cache?.familyName || '',
-      members: m.data ?? [],
-      scheduleTypes: ty.data ?? [],
-      entries: e.data ?? [],
-      tasks: tk.data ?? [],
+      members: (m && m.length) ? m : (cache?.members || []),
+      scheduleTypes: (ty && ty.length) ? ty : (cache?.scheduleTypes || []),
+      entries: (e && e.length) ? e : (cache?.entries || []),
+      tasks: tk || cache?.tasks || [],
     };
     await storage.setItem(WIDGET_CACHE_KEY, JSON.stringify(fresh));
     return fresh;
-  } catch (err) {
-    console.warn('[widget] fetchFresh threw', err);
+  } catch {
     return await readCache();
   }
 }
@@ -172,7 +207,6 @@ function renderPlus(props: WidgetTaskHandlerProps, cache: Cache | null, dayOffse
       typeColor: tt?.color || (transparent ? '#FFFFFF44' : '#F5F3EC'),
     };
   });
-  // First 4 tasks for the same day (not done first, then done)
   const dayTasks = (cache.tasks || []).filter((tk) => tk.entry_date === ds);
   const undone = dayTasks.filter((tk) => !tk.done);
   const done = dayTasks.filter((tk) => !!tk.done);
@@ -187,17 +221,16 @@ export async function widgetTaskHandler(props: WidgetTaskHandlerProps) {
   const { widgetInfo, widgetAction } = props;
   const { dayOffset, transparent } = await readSettings();
 
-  // For refresh clicks (or periodic updates), try to fetch fresh data from Supabase
-  const isRefresh =
-    widgetAction === 'WIDGET_CLICK' && (props as any).clickAction === 'REFRESH_AGENDA';
+  const isRefresh = widgetAction === 'WIDGET_CLICK' && (props as any).clickAction === 'REFRESH_AGENDA';
   const isPeriodic = widgetAction === 'WIDGET_UPDATE';
+  const isResized = widgetAction === 'WIDGET_RESIZED';
   const cache = isRefresh || isPeriodic ? await fetchFresh() : await readCache();
 
-  if (widgetInfo.widgetName === 'Agenda') {
-    renderAgenda(props, cache, dayOffset, transparent);
-  } else if (widgetInfo.widgetName === 'AgendaWeek') {
-    renderWeek(props, cache, transparent);
-  } else if (widgetInfo.widgetName === 'AgendaPlus') {
-    renderPlus(props, cache, dayOffset, transparent);
-  }
+  // Always render with whatever data we have so the widget never blanks out.
+  if (widgetInfo.widgetName === 'Agenda') renderAgenda(props, cache, dayOffset, transparent);
+  else if (widgetInfo.widgetName === 'AgendaWeek') renderWeek(props, cache, transparent);
+  else if (widgetInfo.widgetName === 'AgendaPlus') renderPlus(props, cache, dayOffset, transparent);
+
+  // Mark isResized as referenced to avoid lint warnings; this is intentional.
+  void isResized;
 }

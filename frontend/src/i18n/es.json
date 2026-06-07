@@ -175,5 +175,29 @@
     "placeholder": "Añadir tarea rápida…",
     "delete_title": "¿Eliminar tarea?",
     "delete_msg": "¿Eliminar \"{{title}}\"?"
+  },
+  "users": {
+    "section_title": "Usuarios registrados",
+    "section_hint": "Personas con cuenta en esta familia. Solo el dueño puede eliminarlas.",
+    "no_users": "Aún no hay otros usuarios registrados.",
+    "owner": "Dueño",
+    "member": "Miembro",
+    "you": "Tú",
+    "remove": "Eliminar",
+    "remove_title": "¿Eliminar usuario?",
+    "remove_msg": "Vas a eliminar a {{name}} ({{email}}) de esta familia. Su cuenta no se borra, solo pierde acceso.",
+    "removed": "Eliminado correctamente.",
+    "only_owner": "Solo el dueño de la familia puede eliminar usuarios."
+  },
+  "alerts": {
+    "title": "Cambios recientes",
+    "subtitle": "Cambios en los próximos 14 días desde la última vez que abriste la app",
+    "kind_schedule": "Agenda",
+    "kind_task": "Tarea",
+    "action_insert": "creado",
+    "action_update": "actualizado",
+    "action_delete": "eliminado",
+    "got_it": "Entendido",
+    "by_someone": "alguien"
   }
 }

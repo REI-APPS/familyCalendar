@@ -3,11 +3,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { colors } from '../../src/lib/theme';
+import { RecentChangesAlert } from '../../src/lib/RecentChangesAlert';
 
 export default function AppLayout() {
   const insets = useSafeAreaInsets();
   const { t, i18n } = useTranslation();
   return (
+    <>
     <Tabs
       key={i18n.language}
       screenOptions={{
@@ -68,5 +70,7 @@ export default function AppLayout() {
         }}
       />
     </Tabs>
+    <RecentChangesAlert />
+    </>
   );
 }
