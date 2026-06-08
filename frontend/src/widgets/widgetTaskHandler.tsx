@@ -168,7 +168,7 @@ function renderWeek(props: WidgetTaskHandlerProps, cache: Cache | null, transpar
       if (!ex) return null;
       const t = cache.scheduleTypes.find((tt) => tt.id === ex.schedule_type_id);
       if (!t) return null;
-      return { typeColor: t.color, typeName: t.code };
+      return { typeColor: t.color, typeName: (t.description || t.name) };
     });
   });
   const tasks = cache.tasks || [];

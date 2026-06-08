@@ -52,8 +52,8 @@ export function AgendaWidget(props: WidgetPayload) {
         justifyContent: 'center',
       }}
     >
-      <TextWidget text={e.memberName} style={{ fontSize: 10, fontWeight: '800', color: cardTextColor }} />
-      <TextWidget text={e.typeName} style={{ fontSize: 9, color: cardTextColor, fontWeight: '600' }} />
+      <TextWidget text={e.memberName} style={{ fontSize: 14, fontWeight: '800', color: cardTextColor }} />
+      <TextWidget text={e.typeName} style={{ fontSize: 12, color: cardTextColor, fontWeight: '700' }} />
     </FlexWidget>
   );
 
