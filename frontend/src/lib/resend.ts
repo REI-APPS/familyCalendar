@@ -99,12 +99,20 @@ function buildHtml(opts: Opts, locale: Locale): string {
 
 async function sendViaEdgeFunction(opts: Opts, locale: Locale): Promise<Result | null> {
   try {
+    const s = I18N[locale];
+    const html = buildHtml(opts, locale);
     const { data, error } = await supabase.functions.invoke('send-invite', {
       body: {
+        // Legacy fields (kept so the old edge function code keeps working)
         to: opts.to,
         familyName: opts.familyName,
         inviterEmail: opts.inviterEmail,
         locale,
+        // New override fields — if the deployed function supports them, it
+        // will relay these verbatim (fully localized on the client side).
+        subjectOverride: s.subject(opts.familyName),
+        htmlOverride: html,
+        fromNameOverride: s.fromName,
       },
     });
     if (error) {
@@ -143,9 +151,21 @@ async function sendViaLegacyResend(opts: Opts, locale: Locale): Promise<Result> 
 
 export async function sendInviteEmail(opts: Opts): Promise<Result> {
   const locale = currentLocale();
-  // 1) Try Edge Function first
+  // Strategy: prefer the LEGACY path when EXPO_PUBLIC_RESEND_KEY is configured,
+  // because it guarantees the email is rendered with the app's current locale
+  // (server-side localization depends on the Edge Function being redeployed).
+  // The Edge Function path is kept as a safety net for production builds
+  // where the key is stripped from the bundle.
+  if (LEGACY_KEY) {
+    const legacy = await sendViaLegacyResend(opts, locale);
+    if (legacy.ok) return legacy;
+    // Legacy failed → try Edge Function as last resort
+    const edge = await sendViaEdgeFunction(opts, locale);
+    if (edge && edge.ok) return edge;
+    return legacy; // surface original error
+  }
+  // No legacy key → use Edge Function only
   const edge = await sendViaEdgeFunction(opts, locale);
   if (edge !== null) return edge;
-  // 2) Fallback to legacy client-side Resend call (also localized)
-  return await sendViaLegacyResend(opts, locale);
+  return { ok: false, error: 'No email path available' };
 }
