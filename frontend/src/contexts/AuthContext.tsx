@@ -1,11 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
-import { storage } from '../utils/storage';
-
-const TOKEN_CACHE_KEY = 'widget_access_token';
-const REFRESH_TOKEN_CACHE_KEY = 'widget_refresh_token';
-const TOKEN_EXP_CACHE_KEY = 'widget_access_token_exp';
 
 type AuthCtx = {
   session: Session | null;
@@ -18,37 +13,35 @@ type AuthCtx = {
 
 const AuthContext = createContext<AuthCtx | undefined>(undefined);
 
-// Persist access + refresh tokens in separate AsyncStorage keys so the headless widget
-// task handler can use them without relying on supabase client init order.
-async function persistTokenForWidget(s: Session | null) {
-  try {
-    if (s?.access_token) {
-      await storage.setItem(TOKEN_CACHE_KEY, s.access_token);
-      if (s.refresh_token) await storage.setItem(REFRESH_TOKEN_CACHE_KEY, s.refresh_token);
-      if (s.expires_at) await storage.setItem(TOKEN_EXP_CACHE_KEY, Number(s.expires_at));
-    } else {
-      await storage.setItem(TOKEN_CACHE_KEY, '');
-      await storage.setItem(REFRESH_TOKEN_CACHE_KEY, '');
-      await storage.setItem(TOKEN_EXP_CACHE_KEY, 0);
-    }
-  } catch {}
-}
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let mounted = true;
+
+    // On mount: hydrate the session from AsyncStorage.
+    // supabase-js handles refreshing automatically with autoRefreshToken: true.
     supabase.auth.getSession().then(({ data }) => {
+      if (!mounted) return;
       setSession(data.session);
-      persistTokenForWidget(data.session);
       setLoading(false);
     });
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
-      setSession(s);
-      persistTokenForWidget(s);
+
+    // Listen to auth state changes (SIGNED_IN, SIGNED_OUT, TOKEN_REFRESHED, etc.)
+    // IMPORTANT: a TOKEN_REFRESHED event is benign — do NOT treat it as logout.
+    const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
+      // Only update state when there's an actual change in session presence.
+      // Ignore events that don't change the auth state to prevent spurious re-renders.
+      if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED' || event === 'SIGNED_OUT' || event === 'PASSWORD_RECOVERY') {
+        setSession(s);
+      }
     });
-    return () => sub.subscription.unsubscribe();
+
+    return () => {
+      mounted = false;
+      sub.subscription.unsubscribe();
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {
@@ -63,9 +56,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     await supabase.auth.signOut();
-    await storage.setItem(TOKEN_CACHE_KEY, '');
-    await storage.setItem(REFRESH_TOKEN_CACHE_KEY, '');
-    await storage.setItem(TOKEN_EXP_CACHE_KEY, 0);
   };
 
   return (

@@ -35,6 +35,21 @@ function makeStubClient(): SupabaseClient {
   } as any;
 }
 
+// Shared storage key — both supabase-js (in the foreground app) AND the
+// headless widget read/write the session from this exact AsyncStorage key.
+// We compute it from the supabase project ref to match supabase-js's default.
+function deriveProjectRef(url: string): string {
+  // https://abc123.supabase.co  →  abc123
+  try {
+    const u = new URL(url);
+    return u.hostname.split('.')[0];
+  } catch {
+    return 'default';
+  }
+}
+const PROJECT_REF = deriveProjectRef(supabaseUrl);
+export const SUPABASE_SESSION_KEY = `sb-${PROJECT_REF}-auth-token`;
+
 export const supabase: SupabaseClient = isSupabaseConfigured
   ? createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
