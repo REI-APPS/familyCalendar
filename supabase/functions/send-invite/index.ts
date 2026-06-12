@@ -122,7 +122,7 @@ serve(async (req) => {
       );
     }
 
-    const { to, familyName, inviterEmail, locale: rawLocale } = await req.json();
+    const { to, familyName, inviterEmail, locale: rawLocale, subjectOverride, htmlOverride, fromNameOverride } = await req.json();
     if (!to || !familyName) {
       return new Response(
         JSON.stringify({ error: 'Missing "to" or "familyName"' }),
@@ -132,7 +132,16 @@ serve(async (req) => {
 
     const locale = pickLocale(rawLocale);
     const strings = I18N[locale];
-    const html = buildHtml({ to, familyName, inviterEmail, playStoreUrl: PLAY_STORE_URL, locale });
+    // Prefer client-provided localized content; build server-side as fallback.
+    const subject = typeof subjectOverride === 'string' && subjectOverride.trim()
+      ? subjectOverride
+      : strings.subject(familyName);
+    const html = typeof htmlOverride === 'string' && htmlOverride.trim()
+      ? htmlOverride
+      : buildHtml({ to, familyName, inviterEmail, playStoreUrl: PLAY_STORE_URL, locale });
+    const fromName = typeof fromNameOverride === 'string' && fromNameOverride.trim()
+      ? fromNameOverride
+      : strings.fromName;
 
     const res = await fetch(RESEND_API, {
       method: 'POST',
@@ -141,9 +150,9 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: `${strings.fromName} <${INVITE_FROM}>`,
+        from: `${fromName} <${INVITE_FROM}>`,
         to: [to],
-        subject: strings.subject(familyName),
+        subject,
         html,
       }),
     });

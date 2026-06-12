@@ -38,7 +38,7 @@ export function AgendaPlusWidget(props: AgendaPlusPayload) {
   const cardTextColor = '#2D3142';
   const subTextColor = transparent ? '#FFFFFF' : '#7D8299';
   const headTextColor = transparent ? '#FFFFFF' : '#2D3142';
-  const cellEmptyBg = transparent ? '#FFFFFF1A' : '#EFE9D8';  // softer task background, slightly more visible
+  const cellEmptyBg = transparent ? '#FFFFFF66' : '#E5DDC4';  // less transparent for tasks (more visible/solid)
 
   const entries = props.entries.slice(0, 4); // max 4 schedules
   const tasksLeft = props.tasks.slice(0, 2);

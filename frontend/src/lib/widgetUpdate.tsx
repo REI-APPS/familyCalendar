@@ -89,7 +89,7 @@ export async function updateAgendaWeekWidget(opts: Opts) {
         if (!ex) return null;
         const t = scheduleTypes.find((tt) => tt.id === ex.schedule_type_id);
         if (!t) return null;
-        return { typeColor: t.color, typeName: t.code };
+        return { typeColor: t.color, typeName: t.description || t.name };
       });
     });
 

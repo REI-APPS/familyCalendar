@@ -1,16 +1,15 @@
 import type { WidgetTaskHandlerProps } from 'react-native-android-widget';
 import { addDays, format, startOfWeek } from 'date-fns';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AgendaWidget } from '../widgets/AgendaWidget';
 import { AgendaWeekWidget } from '../widgets/AgendaWeekWidget';
 import { AgendaPlusWidget } from '../widgets/AgendaPlusWidget';
 import { storage } from '../utils/storage';
+import { SUPABASE_SESSION_KEY } from '../lib/supabase';
 
 const WIDGET_CACHE_KEY = 'widget_data_cache';
 const WIDGET_DAY_KEY = 'widget_day_offset';
 const WIDGET_TRANSPARENT_KEY = 'widget_transparent';
-const TOKEN_CACHE_KEY = 'widget_access_token';
-const REFRESH_TOKEN_CACHE_KEY = 'widget_refresh_token';
-const TOKEN_EXP_CACHE_KEY = 'widget_access_token_exp';
 
 const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
 const SUPABASE_ANON = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -41,10 +40,59 @@ async function readCache(): Promise<Cache | null> {
   try { return JSON.parse(raw); } catch { return null; }
 }
 
-/** Try to refresh the JWT using the stored refresh_token. */
+/**
+ * Read the supabase-js session from its real storage location.
+ * supabase-js stores the session as a raw JSON string in AsyncStorage at SUPABASE_SESSION_KEY.
+ */
+async function readSupabaseSession(): Promise<{ access_token?: string; refresh_token?: string; expires_at?: number } | null> {
+  try {
+    const raw = await AsyncStorage.getItem(SUPABASE_SESSION_KEY);
+    if (!raw) return null;
+    const obj = JSON.parse(raw);
+    // supabase-js v2 wraps the session in different shapes depending on version.
+    // Common shapes: { currentSession: {...} } or {...} directly with access_token.
+    const session = obj?.currentSession || obj?.session || obj;
+    if (!session?.access_token) return null;
+    return session;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Write back a refreshed session into supabase-js's storage so both the
+ * widget AND the main app share the latest tokens (avoids the "stale refresh
+ * token → forced logout" bug when refresh-token rotation is enabled).
+ */
+async function writeSupabaseSession(newSess: any): Promise<void> {
+  try {
+    const raw = await AsyncStorage.getItem(SUPABASE_SESSION_KEY);
+    const existing = raw ? JSON.parse(raw) : {};
+    // Preserve whatever wrapper the supabase-js version uses.
+    if (existing && typeof existing === 'object' && 'currentSession' in existing) {
+      existing.currentSession = { ...existing.currentSession, ...newSess };
+      await AsyncStorage.setItem(SUPABASE_SESSION_KEY, JSON.stringify(existing));
+      return;
+    }
+    if (existing && typeof existing === 'object' && 'session' in existing) {
+      existing.session = { ...existing.session, ...newSess };
+      await AsyncStorage.setItem(SUPABASE_SESSION_KEY, JSON.stringify(existing));
+      return;
+    }
+    // Flat session object
+    const merged = { ...(existing || {}), ...newSess };
+    await AsyncStorage.setItem(SUPABASE_SESSION_KEY, JSON.stringify(merged));
+  } catch {
+    // Best-effort: if we can't write back, the main app might still need to re-login;
+    // but we never silently log the user out from the widget side.
+  }
+}
+
+/** Try to refresh the JWT using the stored refresh_token. Writes new tokens back to supabase-js storage. */
 async function refreshAccessToken(): Promise<string | null> {
   try {
-    const rt = await storage.getItem(REFRESH_TOKEN_CACHE_KEY, '');
+    const sess = await readSupabaseSession();
+    const rt = sess?.refresh_token;
     if (!rt) return null;
     const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
       method: 'POST',
@@ -57,9 +105,15 @@ async function refreshAccessToken(): Promise<string | null> {
     if (!res.ok) return null;
     const data = await res.json();
     if (data?.access_token) {
-      await storage.setItem(TOKEN_CACHE_KEY, data.access_token as string);
-      if (data.refresh_token) await storage.setItem(REFRESH_TOKEN_CACHE_KEY, data.refresh_token as string);
-      if (data.expires_at) await storage.setItem(TOKEN_EXP_CACHE_KEY, Number(data.expires_at));
+      // Persist back into the SAME storage supabase-js reads from, so when the
+      // foreground app wakes up it sees the rotated tokens — not the revoked ones.
+      await writeSupabaseSession({
+        access_token: data.access_token,
+        refresh_token: data.refresh_token,
+        expires_at: data.expires_at,
+        expires_in: data.expires_in,
+        token_type: data.token_type,
+      });
       return data.access_token as string;
     }
     return null;
@@ -103,7 +157,9 @@ async function fetchFresh(): Promise<Cache | null> {
     const cache = await readCache();
     const fid = cache?.familyId;
     if (!fid) return cache;
-    let token = await storage.getItem(TOKEN_CACHE_KEY, '');
+    // Read token from the SHARED supabase-js session storage (not a private widget key).
+    const sess = await readSupabaseSession();
+    let token = sess?.access_token || '';
     if (!token) {
       const fresh = await refreshAccessToken();
       if (!fresh) return cache;
@@ -168,7 +224,7 @@ function renderWeek(props: WidgetTaskHandlerProps, cache: Cache | null, transpar
       if (!ex) return null;
       const t = cache.scheduleTypes.find((tt) => tt.id === ex.schedule_type_id);
       if (!t) return null;
-      return { typeColor: t.color, typeName: t.code };
+      return { typeColor: t.color, typeName: (t.description || t.name) };
     });
   });
   const tasks = cache.tasks || [];
