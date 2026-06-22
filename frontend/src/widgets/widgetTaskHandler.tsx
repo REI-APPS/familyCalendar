@@ -168,7 +168,7 @@ async function fetchFresh(): Promise<Cache | null> {
 
     // Run requests independently so a single failure (e.g. tasks RLS) doesn't drop the whole refresh.
     const [m, ty, e, tk] = await Promise.all([
-      restWithRetry(token, `members?family_id=eq.${fid}&select=id,name,color,created_at&order=created_at.asc.nullslast,name.asc`),
+      restWithRetry(token, `members?family_id=eq.${fid}&select=id,name,color,created_at&order=created_at.asc`),
       restWithRetry(token, `schedule_types?family_id=eq.${fid}&select=id,code,name,description,color`),
       restWithRetry(token, `schedule_entries?family_id=eq.${fid}&select=member_id,schedule_type_id,entry_date`),
       restWithRetry(token, `tasks?family_id=eq.${fid}&select=entry_date,title,done&order=entry_date.asc`),
