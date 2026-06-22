@@ -1,41 +1,52 @@
 import { addDays, format, isToday } from 'date-fns';
-import { pt } from 'date-fns/locale';
+import { pt, enUS, es } from 'date-fns/locale';
 import { FlexWidget, TextWidget } from 'react-native-android-widget';
 
 export type WeekCell = {
   typeColor: string;
-  typeName: string; // description (or fallback name) of the schedule type
+  typeName: string;
 };
 
 export type AgendaWeekPayload = {
-  memberNames: string[];     // one per member (columns)
-  memberColors: string[];    // one per member
-  weekStart: string;         // ISO date string
+  memberNames: string[];
+  memberColors: string[];
+  weekStart: string;
   matrix: (WeekCell | null)[][]; // matrix[dayIndex][memberIndex]
-  // tasksByDay[dayIndex] = comma-joined task titles for that day, or null
   tasksByDay?: (string | null)[];
   transparent?: boolean;
+  locale?: 'pt' | 'en' | 'es';
 };
 
+function pickLocale(loc?: string) {
+  if (loc === 'en') return enUS;
+  if (loc === 'es') return es;
+  return pt;
+}
+
 /**
- * Weekly widget — transposed Excel-style table.
+ * Weekly widget — transposed Excel-style.
  *
- * Layout:
  *   ┌─────┬──────┬──────┬──────┐
- *   │  ↻  │User1 │User2 │User3 │   <- header row
+ *   │  ↻  │User1 │User2 │User3 │  <- header row
  *   ├─────┼──────┼──────┼──────┤
- *   │ SEG │Turn1 │Free  │Turn2 │   <- schedule sub-row
- *   │     │ tarefaSeg1, tarefaSeg2  <- task sub-row (spans columns 2..n)
- *   ├─────┼──────┼──────┼──────┤
- *   │ TER │Turn1 │Free  │Turn2 │
- *   │     │ tarefaTER1, tarefaTER2
+ *   │     │Turn1 │Free  │Turn2 │  <- schedules sub-row
+ *   │ SEG ├──────┴──────┴──────┤
+ *   │  1  │ task1, task2          <- tasks sub-row (merged across members)
+ *   ├─────┼──────┬──────┬──────┤
+ *   │     │Turn1 │Free  │Turn2 │
+ *   │ TER ├──────┴──────┴──────┤
+ *   │  2  │ task3, task4
  *   ...
  *
- * Each day occupies 2 sub-rows (schedule + task). Task sub-row is rendered
- * empty when there are no tasks for that day.
+ * KEY: the day-label cell occupies the FULL height of the day block (both
+ * sub-rows), so it's visually clear that the schedule row + task row both
+ * belong to that day. Vertical columns are precisely aligned because the
+ * schedule sub-row and member columns in the header use the SAME flex layout.
  */
 export function AgendaWeekWidget(props: AgendaWeekPayload) {
   const transparent = !!props.transparent;
+  const dateLocale = pickLocale(props.locale);
+
   const containerBg = transparent ? '#00000000' : '#FDFDF9';
   const headBg = transparent ? '#00000033' : '#F5F3EC';
   const textColor = '#2D3142';
@@ -51,10 +62,11 @@ export function AgendaWeekWidget(props: AgendaWeekPayload) {
   const trim = (s: string | null | undefined, max: number) =>
     !s ? '' : (s.length > max ? s.slice(0, max - 1) + '…' : s);
 
-  const dayColWidth = 48; // px for the leftmost column (day labels / refresh)
+  const labelColWidth = 48;
 
   return (
     <FlexWidget
+      clickAction="REFRESH_AGENDA"
       style={{
         height: 'match_parent',
         width: 'match_parent',
@@ -64,12 +76,12 @@ export function AgendaWeekWidget(props: AgendaWeekPayload) {
         flexDirection: 'column',
       }}
     >
-      {/* HEADER ROW: refresh button + member names */}
-      <FlexWidget style={{ flexDirection: 'row', height: 32 }}>
+      {/* HEADER ROW: refresh + member names (defines the column widths used below) */}
+      <FlexWidget style={{ flexDirection: 'row', height: 30 }}>
         <FlexWidget
           clickAction="REFRESH_AGENDA"
           style={{
-            width: dayColWidth,
+            width: labelColWidth,
             backgroundColor: headBg,
             borderRadius: 6,
             marginHorizontal: 1,
@@ -100,76 +112,69 @@ export function AgendaWeekWidget(props: AgendaWeekPayload) {
         ))}
       </FlexWidget>
 
-      {/* DAY BLOCKS — one block per day, each containing schedule + task sub-rows */}
+      {/* DAY BLOCKS — one per weekday. Layout: [day label | right column with 2 sub-rows] */}
       {days.map((d, di) => {
         const today = isToday(d);
         const taskText = tasksByDay[di];
         return (
-          <FlexWidget key={di} style={{ flexDirection: 'column', flex: 1, marginTop: 2 }}>
-            {/* Sub-row 1: schedules */}
-            <FlexWidget style={{ flexDirection: 'row', flex: 1 }}>
-              {/* Day label cell */}
-              <FlexWidget
-                style={{
-                  width: dayColWidth,
-                  backgroundColor: today ? todayBg : headBg,
-                  borderRadius: 6,
-                  marginHorizontal: 1,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: 2,
-                }}
-              >
-                <TextWidget
-                  text={format(d, 'EEE', { locale: pt }).toUpperCase()}
-                  style={{ fontSize: 13, fontWeight: '800', color: today ? '#FFFFFF' : textColor }}
-                />
-                <TextWidget
-                  text={format(d, 'd')}
-                  style={{ fontSize: 11, fontWeight: '700', color: today ? '#FFFFFF' : subColor }}
-                />
-              </FlexWidget>
-              {/* Member schedule cells */}
-              {props.memberNames.map((_, mi) => {
-                const cell = props.matrix[di]?.[mi];
-                return (
-                  <FlexWidget
-                    key={mi}
-                    style={{
-                      flex: 1,
-                      backgroundColor: cell?.typeColor || cellEmptyBg,
-                      borderRadius: 6,
-                      marginHorizontal: 1,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      padding: 2,
-                    }}
-                  >
-                    <TextWidget
-                      text={trim(cell?.typeName, 8)}
-                      style={{ fontSize: 13, fontWeight: '800', color: textColor }}
-                    />
-                  </FlexWidget>
-                );
-              })}
-            </FlexWidget>
-
-            {/* Sub-row 2: tasks (full-width across the member columns) */}
-            <FlexWidget style={{ flexDirection: 'row', flex: 1, marginTop: 1 }}>
-              {/* Empty cell under the day label */}
-              <FlexWidget
-                style={{
-                  width: dayColWidth,
-                  marginHorizontal: 1,
-                }}
+          <FlexWidget key={di} style={{ flexDirection: 'row', flex: 1, marginTop: 2 }}>
+            {/* Day label cell — spans full height of this block (both sub-rows) */}
+            <FlexWidget
+              style={{
+                width: labelColWidth,
+                backgroundColor: today ? todayBg : headBg,
+                borderRadius: 6,
+                marginHorizontal: 1,
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: 2,
+              }}
+            >
+              <TextWidget
+                text={format(d, 'EEE', { locale: dateLocale }).toUpperCase()}
+                style={{ fontSize: 13, fontWeight: '800', color: today ? '#FFFFFF' : textColor }}
               />
-              {/* Merged tasks cell — spans all member columns */}
+              <TextWidget
+                text={format(d, 'd')}
+                style={{ fontSize: 14, fontWeight: '700', color: today ? '#FFFFFF' : subColor }}
+              />
+            </FlexWidget>
+            {/* Right side: schedules on top + tasks on bottom */}
+            <FlexWidget style={{ flex: 1, flexDirection: 'column' }}>
+              {/* Schedules sub-row */}
+              <FlexWidget style={{ flex: 1, flexDirection: 'row' }}>
+                {props.memberNames.map((_, mi) => {
+                  const cell = props.matrix[di]?.[mi];
+                  return (
+                    <FlexWidget
+                      key={mi}
+                      style={{
+                        flex: 1,
+                        backgroundColor: cell?.typeColor || cellEmptyBg,
+                        borderRadius: 6,
+                        marginHorizontal: 1,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: 2,
+                      }}
+                    >
+                      <TextWidget
+                        text={trim(cell?.typeName, 8)}
+                        style={{ fontSize: 13, fontWeight: '800', color: textColor }}
+                      />
+                    </FlexWidget>
+                  );
+                })}
+              </FlexWidget>
+              {/* Tasks sub-row — single merged cell (no per-member sub-cells) */}
               <FlexWidget
                 style={{
                   flex: 1,
+                  flexDirection: 'row',
                   backgroundColor: taskText ? taskBg : cellEmptyBg,
                   borderRadius: 6,
                   marginHorizontal: 1,
+                  marginTop: 1,
                   alignItems: 'center',
                   justifyContent: 'center',
                   padding: 2,
@@ -177,7 +182,7 @@ export function AgendaWeekWidget(props: AgendaWeekPayload) {
               >
                 {taskText ? (
                   <TextWidget
-                    text={trim(taskText, 38)}
+                    text={trim(taskText, 42)}
                     style={{ fontSize: 12, fontWeight: '700', color: textColor }}
                   />
                 ) : null}

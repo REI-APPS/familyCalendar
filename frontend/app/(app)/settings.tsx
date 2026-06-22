@@ -14,6 +14,7 @@ import { sendInviteEmail } from '../../src/lib/resend';
 import { setAppLanguage, Lang } from '../../src/i18n';
 import { useConfirm } from '../../src/lib/ConfirmProvider';
 import { RegisteredUsers } from '../../src/lib/RegisteredUsers';
+import { persistWidgetLocale } from '../../src/lib/widgetUpdate';
 
 const WIDGET_DAY_KEY = 'widget_day_offset';
 const WIDGET_TRANSPARENT_KEY = 'widget_transparent';
@@ -76,6 +77,8 @@ export default function Settings() {
   const onChangeLanguage = async (code: Lang) => {
     setLang(code);
     await setAppLanguage(code);
+    // Update widget's locale cache so day labels reflect the new language
+    await persistWidgetLocale().catch(() => {});
   };
 
   const onSignOut = async () => {

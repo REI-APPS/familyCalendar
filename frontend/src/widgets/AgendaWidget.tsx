@@ -1,5 +1,5 @@
 import { addDays, format } from 'date-fns';
-import { pt } from 'date-fns/locale';
+import { pt, enUS, es } from 'date-fns/locale';
 import { FlexWidget, TextWidget } from 'react-native-android-widget';
 
 export type WidgetEntry = {
@@ -14,19 +14,47 @@ export type WidgetPayload = {
   dayOffset: number;
   entries: WidgetEntry[];
   transparent?: boolean;
+  locale?: 'pt' | 'en' | 'es';
 };
+
+function pickLocale(loc?: string) {
+  if (loc === 'en') return enUS;
+  if (loc === 'es') return es;
+  return pt;
+}
+
+function todayLabel(loc?: string) {
+  if (loc === 'en') return 'TODAY';
+  if (loc === 'es') return 'HOY';
+  return 'HOJE';
+}
+function tomorrowLabel(loc?: string) {
+  if (loc === 'en') return 'TOMORROW';
+  if (loc === 'es') return 'MAÑANA';
+  return 'AMANHÃ';
+}
+function emptyLabel(loc?: string) {
+  if (loc === 'en') return 'No schedule';
+  if (loc === 'es') return 'Sin agenda';
+  return 'Sem agenda';
+}
 
 // Today widget — auto layout:
 //  • <=4 membros → 1 linha (4×1)
 //  • >4 membros → 2 linhas (4×2)
+//
+// Tap anywhere on the widget triggers REFRESH_AGENDA (handled in the headless
+// task handler). It does NOT open the app — opening the app is reserved to
+// explicit deep-link buttons (none here).
 export function AgendaWidget(props: WidgetPayload) {
+  const dateLocale = pickLocale(props.locale);
+
   const dayLabel =
-    props.dayOffset === 0 ? 'HOJE'
-    : props.dayOffset === 1 ? 'AMANHÃ'
-    : format(addDays(new Date(), props.dayOffset), 'EEE d', { locale: pt }).toUpperCase();
+    props.dayOffset === 0 ? todayLabel(props.locale)
+    : props.dayOffset === 1 ? tomorrowLabel(props.locale)
+    : format(addDays(new Date(), props.dayOffset), 'EEE d', { locale: dateLocale }).toUpperCase();
 
   const transparent = !!props.transparent;
-  // 'transparent' must be a real transparent color (#00000000), not the string
   const containerBg = transparent ? '#00000000' : '#FDFDF9';
   const cardTextColor = '#2D3142';
   const subTextColor = transparent ? '#FFFFFF' : '#7D8299';
@@ -59,6 +87,7 @@ export function AgendaWidget(props: WidgetPayload) {
 
   return (
     <FlexWidget
+      clickAction="REFRESH_AGENDA"
       style={{
         height: 'match_parent',
         width: 'match_parent',
@@ -75,14 +104,14 @@ export function AgendaWidget(props: WidgetPayload) {
       >
         <TextWidget text={dayLabel} style={{ fontSize: 11, color: headTextColor, fontWeight: '800', letterSpacing: 0.5 }} />
         <TextWidget
-          text={format(addDays(new Date(), props.dayOffset), 'dd MMM', { locale: pt }).toUpperCase()}
+          text={format(addDays(new Date(), props.dayOffset), 'dd MMM', { locale: dateLocale }).toUpperCase()}
           style={{ fontSize: 9, color: subTextColor, fontWeight: '700' }}
         />
-        <TextWidget text="↻ refresh" style={{ fontSize: 8, color: subTextColor, fontWeight: '700', marginTop: 2 }} />
+        <TextWidget text="↻" style={{ fontSize: 12, color: subTextColor, fontWeight: '800', marginTop: 2 }} />
       </FlexWidget>
 
       {entries.length === 0 ? (
-        <TextWidget text="Sem agenda" style={{ fontSize: 11, color: subTextColor, fontStyle: 'italic', flex: 1, marginLeft: 6 }} />
+        <TextWidget text={emptyLabel(props.locale)} style={{ fontSize: 11, color: subTextColor, fontStyle: 'italic', flex: 1, marginLeft: 6 }} />
       ) : twoRows ? (
         <FlexWidget style={{ flexDirection: 'column', flex: 1 }}>
           <FlexWidget style={{ flexDirection: 'row', flex: 1 }}>{firstRow.map(renderTile)}</FlexWidget>

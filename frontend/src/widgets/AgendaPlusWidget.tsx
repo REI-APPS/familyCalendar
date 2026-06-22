@@ -1,5 +1,5 @@
 import { addDays, format } from 'date-fns';
-import { pt } from 'date-fns/locale';
+import { pt, enUS, es } from 'date-fns/locale';
 import { FlexWidget, TextWidget } from 'react-native-android-widget';
 
 export type AgendaPlusEntry = {
@@ -20,18 +20,43 @@ export type AgendaPlusPayload = {
   entries: AgendaPlusEntry[]; // schedules row
   tasks: AgendaPlusTask[]; // first 4 tasks
   transparent?: boolean;
+  locale?: 'pt' | 'en' | 'es';
 };
 
+function pickLocale(loc?: string) {
+  if (loc === 'en') return enUS;
+  if (loc === 'es') return es;
+  return pt;
+}
+function todayLabel(loc?: string) {
+  if (loc === 'en') return 'TODAY';
+  if (loc === 'es') return 'HOY';
+  return 'HOJE';
+}
+function tomorrowLabel(loc?: string) {
+  if (loc === 'en') return 'TOMORROW';
+  if (loc === 'es') return 'MAÑANA';
+  return 'AMANHÃ';
+}
+function emptyLabel(loc?: string) {
+  if (loc === 'en') return 'No schedule';
+  if (loc === 'es') return 'Sin agenda';
+  return 'Sem agenda';
+}
+
 /**
- * Widget de 2 linhas:
- *   Linha 1 (50%): agenda de hoje (membro + horário)
- *   Linha 2 (50%): 4 tarefas (2 esquerda, 2 direita)
+ * Widget de 1 ou 2 linhas:
+ *   Linha 1: agenda de hoje (membro + horário)
+ *   Linha 2: até 4 tarefas (renderizada APENAS quando há tarefas)
+ *
+ * Toda a área é clickAction=REFRESH_AGENDA (não abre a app).
  */
 export function AgendaPlusWidget(props: AgendaPlusPayload) {
+  const dateLocale = pickLocale(props.locale);
   const dayLabel =
-    props.dayOffset === 0 ? 'HOJE'
-    : props.dayOffset === 1 ? 'AMANHÃ'
-    : format(addDays(new Date(), props.dayOffset), 'EEE d', { locale: pt }).toUpperCase();
+    props.dayOffset === 0 ? todayLabel(props.locale)
+    : props.dayOffset === 1 ? tomorrowLabel(props.locale)
+    : format(addDays(new Date(), props.dayOffset), 'EEE d', { locale: dateLocale }).toUpperCase();
 
   const transparent = !!props.transparent;
   const containerBg = transparent ? '#00000000' : '#FDFDF9';
@@ -85,6 +110,7 @@ export function AgendaPlusWidget(props: AgendaPlusPayload) {
 
   return (
     <FlexWidget
+      clickAction="REFRESH_AGENDA"
       style={{
         height: 'match_parent',
         width: 'match_parent',
@@ -108,10 +134,10 @@ export function AgendaPlusWidget(props: AgendaPlusPayload) {
       >
         <TextWidget text={dayLabel} style={{ fontSize: 11, color: headTextColor, fontWeight: '800', letterSpacing: 0.5 }} />
         <TextWidget
-          text={format(addDays(new Date(), props.dayOffset), 'dd MMM', { locale: pt }).toUpperCase()}
+          text={format(addDays(new Date(), props.dayOffset), 'dd MMM', { locale: dateLocale }).toUpperCase()}
           style={{ fontSize: 9, color: subTextColor, fontWeight: '700' }}
         />
-        <TextWidget text="↻ refresh" style={{ fontSize: 9, color: subTextColor, fontWeight: '700', marginTop: 4 }} />
+        <TextWidget text="↻" style={{ fontSize: 12, color: subTextColor, fontWeight: '800', marginTop: 4 }} />
       </FlexWidget>
 
       {/* If there are tasks → 2 rows (schedules + tasks). Otherwise just schedules (1 row) */}
@@ -119,7 +145,7 @@ export function AgendaPlusWidget(props: AgendaPlusPayload) {
         {/* Row 1: schedules */}
         <FlexWidget style={{ flex: 1, flexDirection: 'row', marginBottom: props.tasks.length > 0 ? 4 : 0 }}>
           {entries.length === 0 ? (
-            <TextWidget text="Sem agenda" style={{ fontSize: 11, color: subTextColor, fontStyle: 'italic', flex: 1, marginLeft: 6 }} />
+            <TextWidget text={emptyLabel(props.locale)} style={{ fontSize: 11, color: subTextColor, fontStyle: 'italic', flex: 1, marginLeft: 6 }} />
           ) : entries.map(renderTile)}
         </FlexWidget>
 

@@ -10,6 +10,7 @@ import { SUPABASE_SESSION_KEY } from '../lib/supabase';
 const WIDGET_CACHE_KEY = 'widget_data_cache';
 const WIDGET_DAY_KEY = 'widget_day_offset';
 const WIDGET_TRANSPARENT_KEY = 'widget_transparent';
+const WIDGET_LOCALE_KEY = 'widget_locale';
 
 const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
 const SUPABASE_ANON = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -31,7 +32,9 @@ type Cache = {
 async function readSettings() {
   const dayStr = await storage.getItem(WIDGET_DAY_KEY, '0');
   const transStr = await storage.getItem(WIDGET_TRANSPARENT_KEY, 'false');
-  return { dayOffset: Number(dayStr) || 0, transparent: transStr === 'true' };
+  const localeStr = await storage.getItem(WIDGET_LOCALE_KEY, 'pt');
+  const locale = (localeStr === 'en' || localeStr === 'es' || localeStr === 'pt') ? localeStr : 'pt';
+  return { dayOffset: Number(dayStr) || 0, transparent: transStr === 'true', locale: locale as 'pt' | 'en' | 'es' };
 }
 
 async function readCache(): Promise<Cache | null> {
@@ -188,9 +191,9 @@ async function fetchFresh(): Promise<Cache | null> {
   }
 }
 
-function renderAgenda(props: WidgetTaskHandlerProps, cache: Cache | null, dayOffset: number, transparent: boolean) {
+function renderAgenda(props: WidgetTaskHandlerProps, cache: Cache | null, dayOffset: number, transparent: boolean, locale: 'pt' | 'en' | 'es') {
   if (!cache) {
-    props.renderWidget(<AgendaWidget familyName="" dayOffset={dayOffset} entries={[]} transparent={transparent} />);
+    props.renderWidget(<AgendaWidget familyName="" dayOffset={dayOffset} entries={[]} transparent={transparent} locale={locale} />);
     return;
   }
   const ds = format(addDays(new Date(), dayOffset), 'yyyy-MM-dd');
@@ -206,13 +209,13 @@ function renderAgenda(props: WidgetTaskHandlerProps, cache: Cache | null, dayOff
     };
   });
   props.renderWidget(
-    <AgendaWidget familyName={cache.familyName} dayOffset={dayOffset} entries={widgetEntries} transparent={transparent} />
+    <AgendaWidget familyName={cache.familyName} dayOffset={dayOffset} entries={widgetEntries} transparent={transparent} locale={locale} />
   );
 }
 
-function renderWeek(props: WidgetTaskHandlerProps, cache: Cache | null, transparent: boolean) {
+function renderWeek(props: WidgetTaskHandlerProps, cache: Cache | null, transparent: boolean, locale: 'pt' | 'en' | 'es') {
   if (!cache) {
-    props.renderWidget(<AgendaWeekWidget memberNames={[]} memberColors={[]} weekStart={new Date().toISOString()} matrix={[]} tasksByDay={[]} transparent={transparent} />);
+    props.renderWidget(<AgendaWeekWidget memberNames={[]} memberColors={[]} weekStart={new Date().toISOString()} matrix={[]} tasksByDay={[]} transparent={transparent} locale={locale} />);
     return;
   }
   const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
@@ -245,13 +248,14 @@ function renderWeek(props: WidgetTaskHandlerProps, cache: Cache | null, transpar
       matrix={matrix}
       tasksByDay={tasksByDay}
       transparent={transparent}
+      locale={locale}
     />
   );
 }
 
-function renderPlus(props: WidgetTaskHandlerProps, cache: Cache | null, dayOffset: number, transparent: boolean) {
+function renderPlus(props: WidgetTaskHandlerProps, cache: Cache | null, dayOffset: number, transparent: boolean, locale: 'pt' | 'en' | 'es') {
   if (!cache) {
-    props.renderWidget(<AgendaPlusWidget familyName="" dayOffset={dayOffset} entries={[]} tasks={[]} transparent={transparent} />);
+    props.renderWidget(<AgendaPlusWidget familyName="" dayOffset={dayOffset} entries={[]} tasks={[]} transparent={transparent} locale={locale} />);
     return;
   }
   const ds = format(addDays(new Date(), dayOffset), 'yyyy-MM-dd');
@@ -272,13 +276,13 @@ function renderPlus(props: WidgetTaskHandlerProps, cache: Cache | null, dayOffse
   const topTasks = [...undone, ...done].slice(0, 4).map((tk) => ({ title: tk.title, done: !!tk.done }));
 
   props.renderWidget(
-    <AgendaPlusWidget familyName={cache.familyName} dayOffset={dayOffset} entries={widgetEntries} tasks={topTasks} transparent={transparent} />
+    <AgendaPlusWidget familyName={cache.familyName} dayOffset={dayOffset} entries={widgetEntries} tasks={topTasks} transparent={transparent} locale={locale} />
   );
 }
 
 export async function widgetTaskHandler(props: WidgetTaskHandlerProps) {
   const { widgetInfo, widgetAction } = props;
-  const { dayOffset, transparent } = await readSettings();
+  const { dayOffset, transparent, locale } = await readSettings();
 
   const isRefresh = widgetAction === 'WIDGET_CLICK' && (props as any).clickAction === 'REFRESH_AGENDA';
   const isPeriodic = widgetAction === 'WIDGET_UPDATE';
@@ -286,9 +290,9 @@ export async function widgetTaskHandler(props: WidgetTaskHandlerProps) {
   const cache = isRefresh || isPeriodic ? await fetchFresh() : await readCache();
 
   // Always render with whatever data we have so the widget never blanks out.
-  if (widgetInfo.widgetName === 'Agenda') renderAgenda(props, cache, dayOffset, transparent);
-  else if (widgetInfo.widgetName === 'AgendaWeek') renderWeek(props, cache, transparent);
-  else if (widgetInfo.widgetName === 'AgendaPlus') renderPlus(props, cache, dayOffset, transparent);
+  if (widgetInfo.widgetName === 'Agenda') renderAgenda(props, cache, dayOffset, transparent, locale);
+  else if (widgetInfo.widgetName === 'AgendaWeek') renderWeek(props, cache, transparent, locale);
+  else if (widgetInfo.widgetName === 'AgendaPlus') renderPlus(props, cache, dayOffset, transparent, locale);
 
   // Mark isResized as referenced to avoid lint warnings; this is intentional.
   void isResized;
