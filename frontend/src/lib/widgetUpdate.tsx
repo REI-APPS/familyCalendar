@@ -1,6 +1,7 @@
 import { Platform } from 'react-native';
 import { addDays, format, startOfWeek } from 'date-fns';
 import { storage } from '../utils/storage';
+import i18n from '../i18n';
 
 export type Member = { id: string; name: string; color: string };
 export type ScheduleType = { id: string; code: string; name: string; description?: string | null; color: string };
@@ -19,6 +20,18 @@ type Opts = {
 };
 
 const WIDGET_CACHE_KEY = 'widget_data_cache';
+const WIDGET_LOCALE_KEY = 'widget_locale';
+
+function currentWidgetLocale(): 'pt' | 'en' | 'es' {
+  const l = (i18n.language || 'pt').slice(0, 2).toLowerCase();
+  if (l === 'en' || l === 'es') return l;
+  return 'pt';
+}
+
+// Persist current app locale so the headless widget task handler can read it
+export async function persistWidgetLocale() {
+  try { await storage.setItem(WIDGET_LOCALE_KEY, currentWidgetLocale()); } catch {}
+}
 
 async function persistCache(opts: Opts) {
   if (!opts.familyId) return;
@@ -59,7 +72,7 @@ export async function updateAgendaWidget(opts: Opts) {
       };
     });
 
-    const payload = { familyName, dayOffset, entries: widgetEntries, transparent };
+    const payload = { familyName, dayOffset, entries: widgetEntries, transparent, locale: currentWidgetLocale() };
 
     await requestWidgetUpdate({
       widgetName: 'Agenda',
@@ -111,6 +124,7 @@ export async function updateAgendaWeekWidget(opts: Opts) {
       matrix,
       tasksByDay,
       transparent,
+      locale: currentWidgetLocale(),
     };
 
     await requestWidgetUpdate({
@@ -150,7 +164,7 @@ export async function updateAgendaPlusWidget(opts: Opts) {
     const done = dayTasks.filter((tk) => !!tk.done);
     const topTasks = [...undone, ...done].slice(0, 4).map((tk) => ({ title: tk.title, done: !!tk.done }));
 
-    const payload = { familyName, dayOffset, entries: widgetEntries, tasks: topTasks, transparent };
+    const payload = { familyName, dayOffset, entries: widgetEntries, tasks: topTasks, transparent, locale: currentWidgetLocale() };
 
     await requestWidgetUpdate({
       widgetName: 'AgendaPlus',
@@ -165,6 +179,7 @@ export async function updateAgendaPlusWidget(opts: Opts) {
 // Convenience: update all three widgets at once
 export async function updateAllWidgets(opts: Opts) {
   await persistCache(opts);
+  await persistWidgetLocale();
   await updateAgendaWidget(opts);
   await updateAgendaWeekWidget(opts);
   await updateAgendaPlusWidget(opts);

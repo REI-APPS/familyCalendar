@@ -10,6 +10,7 @@ import { AuthProvider } from '../src/contexts/AuthContext';
 import { FamilyProvider } from '../src/contexts/FamilyContext';
 import { ConfirmProvider } from '../src/lib/ConfirmProvider';
 import { hydrateLanguage } from '../src/i18n';
+import { persistWidgetLocale } from '../src/lib/widgetUpdate';
 import '../widget-task-handler';
 
 // In production builds silence console output to avoid leaking IDs/structure
@@ -32,7 +33,12 @@ export default function RootLayout() {
   const [i18nReady, setI18nReady] = useState(false);
 
   useEffect(() => {
-    hydrateLanguage().finally(() => setI18nReady(true));
+    hydrateLanguage().finally(() => {
+      setI18nReady(true);
+      // Persist locale for the headless widget task handler so widgets render
+      // day labels in the user's chosen language.
+      persistWidgetLocale().catch(() => {});
+    });
   }, []);
 
   useEffect(() => {
