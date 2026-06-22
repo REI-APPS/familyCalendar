@@ -93,12 +93,15 @@ export async function updateAgendaWeekWidget(opts: Opts) {
       });
     });
 
-    // First task per day (oldest, not done preferred)
+    // Concatenate ALL tasks per day (undone first, then done), comma-separated.
     const tasksByDay = days.map((d) => {
       const ds = format(d, 'yyyy-MM-dd');
       const dayTasks = tasks.filter((tk) => tk.entry_date === ds);
-      const undone = dayTasks.find((tk) => !tk.done);
-      return (undone || dayTasks[0])?.title ?? null;
+      if (dayTasks.length === 0) return null;
+      const undone = dayTasks.filter((tk) => !tk.done).map((tk) => tk.title);
+      const done = dayTasks.filter((tk) => tk.done).map((tk) => tk.title);
+      const all = [...undone, ...done];
+      return all.length ? all.join(', ') : null;
     });
 
     const payload = {
