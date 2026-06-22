@@ -114,26 +114,26 @@ export function AgendaPlusWidget(props: AgendaPlusPayload) {
         <TextWidget text="↻ refresh" style={{ fontSize: 9, color: subTextColor, fontWeight: '700', marginTop: 4 }} />
       </FlexWidget>
 
-      {/* Two rows: schedules + tasks */}
+      {/* If there are tasks → 2 rows (schedules + tasks). Otherwise just schedules (1 row) */}
       <FlexWidget style={{ flex: 1, flexDirection: 'column' }}>
         {/* Row 1: schedules */}
-        <FlexWidget style={{ flex: 1, flexDirection: 'row', marginBottom: 4 }}>
+        <FlexWidget style={{ flex: 1, flexDirection: 'row', marginBottom: props.tasks.length > 0 ? 4 : 0 }}>
           {entries.length === 0 ? (
             <TextWidget text="Sem agenda" style={{ fontSize: 11, color: subTextColor, fontStyle: 'italic', flex: 1, marginLeft: 6 }} />
           ) : entries.map(renderTile)}
         </FlexWidget>
 
-        {/* Row 2: tasks (2 left + 2 right columns) */}
-        <FlexWidget style={{ flex: 1, flexDirection: 'row' }}>
-          <FlexWidget style={{ flex: 1, flexDirection: 'column' }}>
-            {tasksLeft.length === 0 ? (
-              <TextWidget text="Sem tarefas" style={{ fontSize: 10, color: subTextColor, fontStyle: 'italic', flex: 1, marginLeft: 4 }} />
-            ) : tasksLeft.map(renderTask)}
+        {/* Row 2: tasks (rendered ONLY when there are tasks) */}
+        {props.tasks.length > 0 ? (
+          <FlexWidget style={{ flex: 1, flexDirection: 'row' }}>
+            <FlexWidget style={{ flex: 1, flexDirection: 'column' }}>
+              {tasksLeft.map(renderTask)}
+            </FlexWidget>
+            <FlexWidget style={{ flex: 1, flexDirection: 'column' }}>
+              {tasksRight.map(renderTask)}
+            </FlexWidget>
           </FlexWidget>
-          <FlexWidget style={{ flex: 1, flexDirection: 'column' }}>
-            {tasksRight.map(renderTask)}
-          </FlexWidget>
-        </FlexWidget>
+        ) : null}
       </FlexWidget>
     </FlexWidget>
   );

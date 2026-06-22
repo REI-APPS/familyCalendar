@@ -168,7 +168,7 @@ async function fetchFresh(): Promise<Cache | null> {
 
     // Run requests independently so a single failure (e.g. tasks RLS) doesn't drop the whole refresh.
     const [m, ty, e, tk] = await Promise.all([
-      restWithRetry(token, `members?family_id=eq.${fid}&select=id,name,color,created_at&order=created_at.asc.nullslast,name.asc`),
+      restWithRetry(token, `members?family_id=eq.${fid}&select=id,name,color,created_at&order=created_at.asc`),
       restWithRetry(token, `schedule_types?family_id=eq.${fid}&select=id,code,name,description,color`),
       restWithRetry(token, `schedule_entries?family_id=eq.${fid}&select=member_id,schedule_type_id,entry_date`),
       restWithRetry(token, `tasks?family_id=eq.${fid}&select=entry_date,title,done&order=entry_date.asc`),
@@ -231,8 +231,11 @@ function renderWeek(props: WidgetTaskHandlerProps, cache: Cache | null, transpar
   const tasksByDay = days.map((d) => {
     const ds = format(d, 'yyyy-MM-dd');
     const dayTasks = tasks.filter((tk) => tk.entry_date === ds);
-    const undone = dayTasks.find((tk) => !tk.done);
-    return (undone || dayTasks[0])?.title ?? null;
+    if (dayTasks.length === 0) return null;
+    const undone = dayTasks.filter((tk) => !tk.done).map((tk) => tk.title);
+    const done = dayTasks.filter((tk) => tk.done).map((tk) => tk.title);
+    const all = [...undone, ...done];
+    return all.length ? all.join(', ') : null;
   });
   props.renderWidget(
     <AgendaWeekWidget
