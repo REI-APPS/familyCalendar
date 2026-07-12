@@ -2,6 +2,7 @@ import { Platform } from 'react-native';
 import { addDays, format, startOfWeek } from 'date-fns';
 import { storage } from '../utils/storage';
 import i18n from '../i18n';
+import { supabase } from './supabase';
 
 export type Member = { id: string; name: string; color: string };
 export type ScheduleType = { id: string; code: string; name: string; description?: string | null; color: string };
@@ -28,7 +29,6 @@ function currentWidgetLocale(): 'pt' | 'en' | 'es' {
   return 'pt';
 }
 
-// Persist current app locale so the headless widget task handler can read it
 export async function persistWidgetLocale() {
   try { await storage.setItem(WIDGET_LOCALE_KEY, currentWidgetLocale()); } catch {}
 }
@@ -36,6 +36,11 @@ export async function persistWidgetLocale() {
 async function persistCache(opts: Opts) {
   if (!opts.familyId) return;
   try {
+    // Capture the CURRENT session tokens too so the headless widget task
+    // handler doesn't need to guess where supabase-js keeps its session.
+    // The tokens live inside the widget cache: self-contained refresh.
+    const { data } = await supabase.auth.getSession();
+    const session = data?.session;
     await storage.setItem(
       WIDGET_CACHE_KEY,
       JSON.stringify({
@@ -45,6 +50,12 @@ async function persistCache(opts: Opts) {
         scheduleTypes: opts.scheduleTypes.map((t) => ({ id: t.id, code: t.code, name: t.name, description: t.description, color: t.color })),
         entries: opts.entries.map((e) => ({ member_id: e.member_id, schedule_type_id: e.schedule_type_id, entry_date: e.entry_date })),
         tasks: (opts.tasks || []).map((tk) => ({ entry_date: tk.entry_date, title: tk.title, done: !!tk.done })),
+        // Session snapshot (auto-refreshed by supabase-js in the foreground;
+        // headless handler will refresh on-demand and write back).
+        access_token: session?.access_token ?? null,
+        refresh_token: session?.refresh_token ?? null,
+        expires_at: session?.expires_at ?? null,
+        cached_at: Date.now(),
       })
     );
   } catch {}

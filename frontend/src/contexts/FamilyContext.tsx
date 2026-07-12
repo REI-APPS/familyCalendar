@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './AuthContext';
+import { updateAllWidgets, persistWidgetLocale } from '../lib/widgetUpdate';
 
 export type Family = { id: string; name: string; created_by: string };
 export type Member = { id: string; family_id: string; user_id: string | null; name: string; color: string; role: string };
@@ -91,6 +92,21 @@ export function FamilyProvider({ children }: { children: React.ReactNode }) {
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [family, loadFamilyData]);
+
+  // Whenever the family data changes, refresh the widget cache so the
+  // headless task handler always has the latest data + a fresh access_token.
+  useEffect(() => {
+    if (!family) return;
+    updateAllWidgets({
+      familyId: family.id,
+      familyName: family.name,
+      members: members.map((m) => ({ id: m.id, name: m.name, color: m.color })),
+      scheduleTypes: scheduleTypes.map((t) => ({ id: t.id, code: t.code, name: t.name, description: t.description, color: t.color })),
+      entries: entries.map((e) => ({ member_id: e.member_id, schedule_type_id: e.schedule_type_id, entry_date: e.entry_date })),
+      tasks: tasks.map((tk) => ({ entry_date: tk.entry_date, title: tk.title, done: !!tk.done })),
+    }).catch(() => {});
+    persistWidgetLocale().catch(() => {});
+  }, [family, members, scheduleTypes, entries, tasks]);
 
   const selectFamily = (id: string) => {
     const f = families.find((x) => x.id === id);
