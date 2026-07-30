@@ -88,6 +88,7 @@ export function AgendaWidget(props: WidgetPayload) {
   return (
     <FlexWidget
       clickAction="REFRESH_AGENDA"
+      clickActionData={{}}
       style={{
         height: 'match_parent',
         width: 'match_parent',
@@ -100,6 +101,7 @@ export function AgendaWidget(props: WidgetPayload) {
     >
       <FlexWidget
         clickAction="REFRESH_AGENDA"
+      clickActionData={{}}
         style={{ flexDirection: 'column', marginRight: 8, justifyContent: 'center', width: 60, padding: 4, borderRadius: 8 }}
       >
         <TextWidget text={dayLabel} style={{ fontSize: 11, color: headTextColor, fontWeight: '800', letterSpacing: 0.5 }} />

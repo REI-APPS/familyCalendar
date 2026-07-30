@@ -111,6 +111,7 @@ export function AgendaPlusWidget(props: AgendaPlusPayload) {
   return (
     <FlexWidget
       clickAction="REFRESH_AGENDA"
+      clickActionData={{}}
       style={{
         height: 'match_parent',
         width: 'match_parent',
@@ -123,6 +124,7 @@ export function AgendaPlusWidget(props: AgendaPlusPayload) {
       {/* Left date / refresh button column */}
       <FlexWidget
         clickAction="REFRESH_AGENDA"
+      clickActionData={{}}
         style={{
           flexDirection: 'column',
           marginRight: 8,
