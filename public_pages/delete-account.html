@@ -1,16 +1,19 @@
 <!doctype html>
-<html lang="pt">
+<html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="robots" content="index,follow">
-  <title>Apagar Conta — Agenda da Família</title>
-  <meta name="description" content="Como apagar a tua conta e dados na app Agenda da Família.">
+  <title>Delete Account · Family Agenda</title>
+  <meta name="description" content="How to delete your account and data in Family Agenda.">
   <style>
     :root{--pink:#FF8FA3;--pink-light:#FFF0F3;--bg:#FDFDF9;--surface:#fff;--text:#2D3142;--muted:#7D8299;--border:#E8E5DC}
     *{box-sizing:border-box}html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;line-height:1.55}
     a{color:var(--pink);text-decoration:none;font-weight:700}a:hover{text-decoration:underline}
-    .container{max-width:720px;margin:0 auto;padding:32px 20px 60px}
+    .container{max-width:720px;margin:0 auto;padding:24px 20px 60px}
+    .lang{display:flex;gap:6px;justify-content:flex-end;margin-bottom:8px}
+    .lang button{padding:6px 12px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--muted);font-weight:800;font-size:12px;letter-spacing:.4px;cursor:pointer}
+    .lang button.active{background:var(--pink);border-color:var(--pink);color:#fff}
     header{text-align:center;padding:16px 0 20px}
     header img{width:72px;height:72px;border-radius:18px}
     header h1{margin:12px 0 4px;font-size:26px}
@@ -23,89 +26,222 @@
     .section h2{margin:0 0 12px;font-size:16px}
     .section p{margin:8px 0;color:var(--muted);font-size:14px}
     b{color:var(--text)}
-    ol.steps{list-style:none;padding-left:0;margin:8px 0}
+    ol.steps{list-style:none;padding-left:0;margin:8px 0;counter-reset:step}
     ol.steps li{display:flex;align-items:center;margin:10px 0;color:var(--muted);font-size:14px}
-    ol.steps li::before{
-      content:counter(step);counter-increment:step;
-      display:inline-flex;align-items:center;justify-content:center;
-      width:26px;height:26px;border-radius:50%;background:var(--pink);color:#fff;
-      font-weight:800;font-size:13px;margin-right:12px;flex-shrink:0}
-    ol.steps{counter-reset:step}
+    ol.steps li::before{content:counter(step);counter-increment:step;display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:var(--pink);color:#fff;font-weight:800;font-size:13px;margin-right:12px;flex-shrink:0}
     ul{padding-left:20px;color:var(--muted)}li{margin:4px 0}
     footer{text-align:center;margin-top:24px;color:var(--muted);font-size:12px}
+    [data-lang]{display:none}
+    [data-lang].on{display:block}
+    [data-inline][data-lang]{display:none}
+    [data-inline][data-lang].on{display:inline}
   </style>
 </head>
 <body>
   <div class="container">
+    <div class="lang" role="group" aria-label="Language">
+      <button type="button" data-set="pt" class="active">PT</button>
+      <button type="button" data-set="en">EN</button>
+      <button type="button" data-set="es">ES</button>
+    </div>
+
     <header>
-      <img src="./icon.png" alt="Agenda da Família">
-      <h1>Apagar a tua conta</h1>
-      <p>Agenda da Família</p>
+      <img src="./icon.png" alt="">
+      <h1 data-inline data-lang="pt" class="on">Apagar a tua conta</h1>
+      <h1 data-inline data-lang="en">Delete your account</h1>
+      <h1 data-inline data-lang="es">Eliminar tu cuenta</h1>
+      <p data-inline data-lang="pt" class="on">Agenda da Família</p>
+      <p data-inline data-lang="en">Family Agenda</p>
+      <p data-inline data-lang="es">Agenda Familiar</p>
     </header>
 
-    <div class="hero">
-      <h2>Podes apagar a tua conta a qualquer momento</h2>
-      <p>Existem duas formas: dentro da App ou por email.</p>
+    <!-- ================= PORTUGUESE ================= -->
+    <div data-lang="pt" class="on">
+      <div class="hero">
+        <h2>Podes apagar a tua conta a qualquer momento</h2>
+        <p>Existem duas formas: dentro da App ou por email.</p>
+      </div>
+      <div class="section highlight">
+        <h2>Opção 1 — Apagar dentro da App (recomendado)</h2>
+        <ol class="steps">
+          <li>Abre a app <b>Agenda da Família</b></li>
+          <li>Faz login com a tua conta</li>
+          <li>Toca no separador <b>Ajustes</b> (canto inferior direito)</li>
+          <li>Desce até à secção <b>Zona de Perigo</b></li>
+          <li>Toca em <b>Apagar Conta</b></li>
+          <li>Confirma a operação — a tua conta é apagada imediatamente</li>
+        </ol>
+      </div>
+      <div class="section">
+        <h2>Opção 2 — Pedir por email</h2>
+        <p>Se não consegues aceder à App, envia-nos um email a partir do endereço da tua conta com o assunto <b>"Apagar conta"</b> para:</p>
+        <p><a href="mailto:suporte@familycalendar.grouprei.com?subject=Apagar%20conta">suporte@familycalendar.grouprei.com</a></p>
+        <p>Vamos processar o teu pedido no prazo máximo de <b>30 dias</b>.</p>
+      </div>
+      <div class="section">
+        <h2>Que dados são apagados?</h2>
+        <ul>
+          <li>A tua conta de utilizador (email + password)</li>
+          <li>Membros que criaste (se fores o dono da família)</li>
+          <li>Turnos, tipos de horário e tarefas que criaste</li>
+          <li>Convites pendentes enviados por ti</li>
+          <li>Sessão activa em todos os dispositivos</li>
+        </ul>
+      </div>
+      <div class="section">
+        <h2>Que dados podem ficar retidos</h2>
+        <p>Por razões legais ou de segurança:</p>
+        <ul>
+          <li>Logs de acesso anónimos (até 90 dias)</li>
+          <li>Registos de faturação (não aplicável — não temos pagamentos)</li>
+        </ul>
+        <p>Estes dados <b>não</b> permitem identificar-te pessoalmente após a eliminação.</p>
+      </div>
+      <div class="section">
+        <h2>Se és o dono da família</h2>
+        <p>Ao apagares a tua conta a família inteira e todos os dados associados são apagados — incluindo os horários e tarefas dos outros membros.</p>
+      </div>
+      <div class="section">
+        <h2>Prazo de eliminação</h2>
+        <p>Os dados são eliminados <b>imediatamente</b> após a confirmação. Cópias de backup são apagadas em 30 dias.</p>
+      </div>
+      <div class="section">
+        <h2>Precisas de ajuda?</h2>
+        <p><a href="mailto:suporte@familycalendar.grouprei.com">suporte@familycalendar.grouprei.com</a></p>
+      </div>
     </div>
 
-    <div class="section highlight">
-      <h2>Opção 1 — Apagar dentro da App (recomendado)</h2>
-      <ol class="steps">
-        <li>Abre a app <b>Agenda da Família</b></li>
-        <li>Faz login com a tua conta</li>
-        <li>Toca no separador <b>Ajustes</b> (canto inferior direito)</li>
-        <li>Desce até à secção <b>Zona de Perigo</b></li>
-        <li>Toca em <b>Apagar Conta</b></li>
-        <li>Confirma a operação — a tua conta é apagada imediatamente</li>
-      </ol>
+    <!-- ================= ENGLISH ================= -->
+    <div data-lang="en">
+      <div class="hero">
+        <h2>You can delete your account at any time</h2>
+        <p>There are two options: inside the App or by email.</p>
+      </div>
+      <div class="section highlight">
+        <h2>Option 1 — Delete inside the App (recommended)</h2>
+        <ol class="steps">
+          <li>Open the <b>Family Agenda</b> app</li>
+          <li>Sign in to your account</li>
+          <li>Tap the <b>Settings</b> tab (bottom right)</li>
+          <li>Scroll to the <b>Danger Zone</b> section</li>
+          <li>Tap <b>Delete Account</b></li>
+          <li>Confirm — your account is deleted immediately</li>
+        </ol>
+      </div>
+      <div class="section">
+        <h2>Option 2 — Request by email</h2>
+        <p>If you can't access the App, send us an email from your account address with the subject <b>"Delete account"</b> to:</p>
+        <p><a href="mailto:suporte@familycalendar.grouprei.com?subject=Delete%20account">suporte@familycalendar.grouprei.com</a></p>
+        <p>We will process your request within a maximum of <b>30 days</b>.</p>
+      </div>
+      <div class="section">
+        <h2>What data is deleted?</h2>
+        <ul>
+          <li>Your user account (email + password)</li>
+          <li>Members you created (if you are the family owner)</li>
+          <li>Shifts, schedule types and tasks you created</li>
+          <li>Pending invitations you sent</li>
+          <li>Active sessions on all devices</li>
+        </ul>
+      </div>
+      <div class="section">
+        <h2>What data may be retained</h2>
+        <p>For legal or security reasons:</p>
+        <ul>
+          <li>Anonymous access logs (up to 90 days)</li>
+          <li>Billing records (not applicable — we don't handle payments)</li>
+        </ul>
+        <p>This data cannot identify you personally after deletion.</p>
+      </div>
+      <div class="section">
+        <h2>If you are the family owner</h2>
+        <p>Deleting your account deletes the entire family and all associated data — including other members' schedules and tasks.</p>
+      </div>
+      <div class="section">
+        <h2>Deletion deadline</h2>
+        <p>Data is deleted <b>immediately</b> upon confirmation. Backup copies are deleted within 30 days.</p>
+      </div>
+      <div class="section">
+        <h2>Need help?</h2>
+        <p><a href="mailto:suporte@familycalendar.grouprei.com">suporte@familycalendar.grouprei.com</a></p>
+      </div>
     </div>
 
-    <div class="section">
-      <h2>Opção 2 — Pedir por email</h2>
-      <p>Se não consegues aceder à App, envia-nos um email a partir do endereço da tua conta com o assunto <b>"Apagar conta"</b> para:</p>
-      <p><a href="mailto:suporte@familycalendar.grouprei.com?subject=Apagar%20conta">suporte@familycalendar.grouprei.com</a></p>
-      <p>Vamos processar o teu pedido no prazo máximo de <b>30 dias</b> e enviaremos uma confirmação por email.</p>
+    <!-- ================= SPANISH ================= -->
+    <div data-lang="es">
+      <div class="hero">
+        <h2>Puedes eliminar tu cuenta en cualquier momento</h2>
+        <p>Hay dos formas: dentro de la App o por email.</p>
+      </div>
+      <div class="section highlight">
+        <h2>Opción 1 — Eliminar dentro de la App (recomendado)</h2>
+        <ol class="steps">
+          <li>Abre la app <b>Agenda Familiar</b></li>
+          <li>Inicia sesión con tu cuenta</li>
+          <li>Toca la pestaña <b>Ajustes</b> (esquina inferior derecha)</li>
+          <li>Baja hasta la sección <b>Zona de Peligro</b></li>
+          <li>Toca <b>Eliminar Cuenta</b></li>
+          <li>Confirma — tu cuenta se elimina inmediatamente</li>
+        </ol>
+      </div>
+      <div class="section">
+        <h2>Opción 2 — Solicitar por email</h2>
+        <p>Si no puedes acceder a la App, envíanos un email desde la dirección de tu cuenta con el asunto <b>"Eliminar cuenta"</b> a:</p>
+        <p><a href="mailto:suporte@familycalendar.grouprei.com?subject=Eliminar%20cuenta">suporte@familycalendar.grouprei.com</a></p>
+        <p>Procesaremos tu solicitud en un plazo máximo de <b>30 días</b>.</p>
+      </div>
+      <div class="section">
+        <h2>¿Qué datos se eliminan?</h2>
+        <ul>
+          <li>Tu cuenta de usuario (email + contraseña)</li>
+          <li>Miembros que creaste (si eres el dueño de la familia)</li>
+          <li>Turnos, tipos de horario y tareas que creaste</li>
+          <li>Invitaciones pendientes enviadas por ti</li>
+          <li>Sesiones activas en todos los dispositivos</li>
+        </ul>
+      </div>
+      <div class="section">
+        <h2>Qué datos pueden retenerse</h2>
+        <p>Por razones legales o de seguridad:</p>
+        <ul>
+          <li>Logs de acceso anónimos (hasta 90 días)</li>
+          <li>Registros de facturación (no aplicable — no gestionamos pagos)</li>
+        </ul>
+        <p>Estos datos <b>no</b> permiten identificarte personalmente después de la eliminación.</p>
+      </div>
+      <div class="section">
+        <h2>Si eres el dueño de la familia</h2>
+        <p>Al eliminar tu cuenta se elimina toda la familia y todos los datos asociados — incluyendo los horarios y tareas de los otros miembros.</p>
+      </div>
+      <div class="section">
+        <h2>Plazo de eliminación</h2>
+        <p>Los datos se eliminan <b>inmediatamente</b> tras la confirmación. Las copias de seguridad se eliminan en 30 días.</p>
+      </div>
+      <div class="section">
+        <h2>¿Necesitas ayuda?</h2>
+        <p><a href="mailto:suporte@familycalendar.grouprei.com">suporte@familycalendar.grouprei.com</a></p>
+      </div>
     </div>
 
-    <div class="section">
-      <h2>Que dados são apagados?</h2>
-      <ul>
-        <li>A tua conta de utilizador (email + password)</li>
-        <li>Membros que criaste (se fores o dono da família)</li>
-        <li>Turnos, tipos de horário e tarefas que criaste</li>
-        <li>Convites enviados por ti que ainda estejam pendentes</li>
-        <li>Sessão activa em todos os dispositivos</li>
-      </ul>
-    </div>
-
-    <div class="section">
-      <h2>Que dados podem ficar retidos</h2>
-      <p>Por razões legais, fiscais ou de segurança, podemos reter alguns dados durante um período limitado:</p>
-      <ul>
-        <li>Logs de acesso anónimos (até 90 dias, para deteção de fraude)</li>
-        <li>Registos de faturação/recibos (não aplicável nesta app — não temos pagamentos)</li>
-      </ul>
-      <p>Estes dados <b>não</b> permitem identificar-te pessoalmente após a eliminação.</p>
-    </div>
-
-    <div class="section">
-      <h2>Se és o dono da família</h2>
-      <p>Se és o proprietário (owner) da família, ao apagares a tua conta a família inteira e todos os dados associados são apagados — incluindo os horários e tarefas dos outros membros.</p>
-      <p><b>Alternativa:</b> podes transferir a propriedade da família para outro membro antes de apagares a conta, ou remover o teu vínculo à família e apagar apenas a tua conta pessoal.</p>
-    </div>
-
-    <div class="section">
-      <h2>Prazo de eliminação</h2>
-      <p>Os dados são eliminados dos nossos sistemas <b>imediatamente</b> após a confirmação. Cópias de backup são apagadas automaticamente no prazo máximo de 30 dias.</p>
-    </div>
-
-    <div class="section">
-      <h2>Precisas de ajuda?</h2>
-      <p>Envia-nos um email:</p>
-      <p><a href="mailto:suporte@familycalendar.grouprei.com">suporte@familycalendar.grouprei.com</a></p>
-    </div>
-
-    <footer>© 2026 Agenda da Família · Grouprei</footer>
+    <footer>© 2026 · Grouprei</footer>
   </div>
+
+  <script>
+    (function(){
+      var qs = new URLSearchParams(location.search);
+      var initial = qs.get('lang') || (localStorage.getItem('fa_lang')) || (navigator.language || 'pt').slice(0,2).toLowerCase();
+      if (!['pt','en','es'].includes(initial)) initial = 'pt';
+      function setLang(code){
+        document.documentElement.setAttribute('lang', code);
+        try { localStorage.setItem('fa_lang', code); } catch(e){}
+        document.querySelectorAll('[data-lang]').forEach(function(el){ el.classList.toggle('on', el.getAttribute('data-lang') === code); });
+        document.querySelectorAll('.lang button').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-set') === code); });
+      }
+      document.querySelectorAll('.lang button').forEach(function(b){
+        b.addEventListener('click', function(){ setLang(b.getAttribute('data-set')); });
+      });
+      setLang(initial);
+    })();
+  </script>
 </body>
 </html>

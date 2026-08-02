@@ -1,16 +1,18 @@
 <!doctype html>
-<html lang="pt">
+<html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="robots" content="index,follow">
-  <title>Termos & Política de Privacidade — Agenda da Família</title>
-  <meta name="description" content="Termos de utilização e política de privacidade da app Agenda da Família.">
+  <title>Terms & Privacy · Family Agenda</title>
   <style>
     :root{--pink:#FF8FA3;--bg:#FDFDF9;--surface:#fff;--text:#2D3142;--muted:#7D8299;--border:#E8E5DC}
     *{box-sizing:border-box}html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;line-height:1.55}
     a{color:var(--pink);text-decoration:none;font-weight:700}a:hover{text-decoration:underline}
-    .container{max-width:800px;margin:0 auto;padding:32px 20px 60px}
+    .container{max-width:800px;margin:0 auto;padding:24px 20px 60px}
+    .lang{display:flex;gap:6px;justify-content:flex-end;margin-bottom:8px}
+    .lang button{padding:6px 12px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--muted);font-weight:800;font-size:12px;letter-spacing:.4px;cursor:pointer}
+    .lang button.active{background:var(--pink);border-color:var(--pink);color:#fff}
     header{text-align:center;padding:16px 0 24px}
     header img{width:72px;height:72px;border-radius:18px}
     header h1{margin:12px 0 4px;font-size:22px}
@@ -21,101 +23,80 @@
     b{color:var(--text)}
     ul{padding-left:20px;color:var(--muted)}li{margin:4px 0}
     footer{text-align:center;margin-top:24px;color:var(--muted);font-size:12px}
+    [data-lang]{display:none}[data-lang].on{display:block}
+    [data-inline][data-lang]{display:none}[data-inline][data-lang].on{display:inline}
   </style>
 </head>
 <body>
   <div class="container">
+    <div class="lang"><button type="button" data-set="pt" class="active">PT</button><button type="button" data-set="en">EN</button><button type="button" data-set="es">ES</button></div>
     <header>
-      <img src="./icon.png" alt="Agenda da Família">
-      <h1>Termos & Política de Privacidade</h1>
-      <p>Última atualização: 15 de Junho de 2026</p>
+      <img src="./icon.png" alt="">
+      <h1 data-inline data-lang="pt" class="on">Termos & Política de Privacidade</h1>
+      <h1 data-inline data-lang="en">Terms & Privacy Policy</h1>
+      <h1 data-inline data-lang="es">Términos & Política de Privacidad</h1>
+      <p data-inline data-lang="pt" class="on">Última atualização: 15 de Junho de 2026</p>
+      <p data-inline data-lang="en">Last updated: June 15, 2026</p>
+      <p data-inline data-lang="es">Última actualización: 15 de junio de 2026</p>
     </header>
 
-    <div class="section">
-      <h2>1. Aceitação dos termos</h2>
-      <p>Ao instalar, aceder ou utilizar a aplicação Agenda da Família ("a App"), o utilizador concorda com estes Termos de Utilização e com a Política de Privacidade descrita neste documento. Se não concordar, deve deixar de utilizar a App.</p>
+    <div data-lang="pt" class="on">
+      <div class="section"><h2>1. Aceitação dos termos</h2><p>Ao instalar, aceder ou utilizar a aplicação Agenda da Família ("a App"), o utilizador concorda com estes Termos e com a Política de Privacidade. Se não concordar, deve deixar de utilizar a App.</p></div>
+      <div class="section"><h2>2. Descrição do serviço</h2><p>App móvel para organizar horários e tarefas entre membros de uma mesma família. Permite criar contas, criar/aderir a uma família, gerir turnos e convidar membros por email.</p></div>
+      <div class="section"><h2>3. Contas de utilizador</h2><p>É necessário criar uma conta com email válido e password. O utilizador é responsável pelas credenciais.</p><p>Podes apagar a tua conta a qualquer momento em "Ajustes".</p></div>
+      <div class="section"><h2>4. Dados que recolhemos</h2><p>Recolhemos apenas o necessário:</p><ul><li>Email e password (autenticação)</li><li>Nome da família e dos membros</li><li>Turnos, tipos de horário e tarefas</li><li>Idioma escolhido</li><li>Timestamps de criação/alteração</li></ul><p><b>Não recolhemos</b> localização, contactos, câmara, microfone ou IDs publicitários.</p></div>
+      <div class="section"><h2>5. Como usamos os teus dados</h2><ul><li>Autenticação e sessão</li><li>Mostrar agenda partilhada aos membros da família</li><li>Enviar convites (só quando pedires)</li><li>Melhorar estabilidade/segurança</li></ul><p>Não vendemos nem partilhamos dados pessoais para publicidade.</p></div>
+      <div class="section"><h2>6. Onde ficam guardados</h2><p>PostgreSQL gerida pela Supabase Inc. (EU-West), com Row Level Security. Convites por email via Resend (apagados após 30 dias).</p></div>
+      <div class="section"><h2>7. Retenção</h2><p>Dados mantidos enquanto a conta estiver activa. Ao apagar a conta, tudo é apagado em até 30 dias. Ver <a href="./delete-account.html">Apagar Conta</a>.</p></div>
+      <div class="section"><h2>8. Direitos (RGPD)</h2><ul><li>Aceder aos teus dados na App</li><li>Corrigir dados</li><li>Apagar conta (Ajustes)</li><li>Pedir cópia dos dados por email</li><li>Retirar consentimento (apagar conta)</li></ul></div>
+      <div class="section"><h2>9. Menores</h2><p>Mínimo 16 anos. Pais são responsáveis pela utilização dos filhos.</p></div>
+      <div class="section"><h2>10. Limitação de responsabilidade</h2><p>A App é fornecida "tal como está". Não garantimos disponibilidade ininterrupta. Não somos responsáveis por perdas indiretas.</p></div>
+      <div class="section"><h2>11. Alterações</h2><p>Podemos atualizar estes Termos. Alterações significativas são comunicadas na App.</p></div>
+      <div class="section"><h2>12. Contacto</h2><p><a href="mailto:suporte@familycalendar.grouprei.com">suporte@familycalendar.grouprei.com</a></p></div>
     </div>
 
-    <div class="section">
-      <h2>2. Descrição do serviço</h2>
-      <p>A Agenda da Família é uma app móvel para organização de horários e tarefas entre membros de uma mesma família. Permite criar contas, criar ou aderir a uma família, gerir turnos, tarefas e convidar outros membros por email.</p>
+    <div data-lang="en">
+      <div class="section"><h2>1. Acceptance of terms</h2><p>By installing, accessing or using the Family Agenda application ("the App"), you agree to these Terms and Privacy Policy. If you disagree, stop using the App.</p></div>
+      <div class="section"><h2>2. Service description</h2><p>Mobile app for organizing schedules and tasks among family members. Create accounts, create/join a family, manage shifts and invite members by email.</p></div>
+      <div class="section"><h2>3. User accounts</h2><p>Requires a valid email and password. You are responsible for your credentials.</p><p>You can delete your account at any time from "Settings".</p></div>
+      <div class="section"><h2>4. Data we collect</h2><p>Only what is needed:</p><ul><li>Email and password (auth)</li><li>Family and member names</li><li>Shifts, schedule types and tasks</li><li>Chosen language</li><li>Creation/modification timestamps</li></ul><p><b>We do not collect</b> location, contacts, camera, microphone or advertising IDs.</p></div>
+      <div class="section"><h2>5. How we use your data</h2><ul><li>Authentication and session</li><li>Show shared calendar to family members</li><li>Send invitations (only when you request)</li><li>Improve stability/security</li></ul><p>We do not sell or share personal data for advertising.</p></div>
+      <div class="section"><h2>6. Where data is stored</h2><p>PostgreSQL managed by Supabase Inc. (EU-West), with Row Level Security. Invitation emails via Resend (deleted after 30 days).</p></div>
+      <div class="section"><h2>7. Retention</h2><p>Data kept while account active. Upon deletion, everything deleted within 30 days. See <a href="./delete-account.html">Delete Account</a>.</p></div>
+      <div class="section"><h2>8. Rights (GDPR)</h2><ul><li>Access your data in the App</li><li>Correct data</li><li>Delete account (Settings)</li><li>Request a copy of your data by email</li><li>Withdraw consent (delete account)</li></ul></div>
+      <div class="section"><h2>9. Minors</h2><p>Minimum age 16. Parents are responsible for their children's use.</p></div>
+      <div class="section"><h2>10. Limitation of liability</h2><p>App provided "as is". We do not guarantee uninterrupted availability. Not liable for indirect losses.</p></div>
+      <div class="section"><h2>11. Changes</h2><p>We may update these Terms. Significant changes will be communicated in-app.</p></div>
+      <div class="section"><h2>12. Contact</h2><p><a href="mailto:suporte@familycalendar.grouprei.com">suporte@familycalendar.grouprei.com</a></p></div>
     </div>
 
-    <div class="section">
-      <h2>3. Contas de utilizador</h2>
-      <p>Para usar a App é necessário criar uma conta com um email válido e uma password. O utilizador é responsável por manter a confidencialidade das credenciais e por todas as ações realizadas com a sua conta.</p>
-      <p>Só o proprietário da família pode remover outros membros. O utilizador pode apagar a sua própria conta em qualquer momento a partir do ecrã "Ajustes".</p>
+    <div data-lang="es">
+      <div class="section"><h2>1. Aceptación de los términos</h2><p>Al instalar, acceder o utilizar la aplicación Agenda Familiar ("la App"), aceptas estos Términos y la Política de Privacidad. Si no estás de acuerdo, deja de usar la App.</p></div>
+      <div class="section"><h2>2. Descripción del servicio</h2><p>App móvil para organizar horarios y tareas entre miembros de una misma familia. Crear cuentas, crear/unirse a una familia, gestionar turnos e invitar miembros por email.</p></div>
+      <div class="section"><h2>3. Cuentas de usuario</h2><p>Requiere email válido y contraseña. Eres responsable de tus credenciales.</p><p>Puedes eliminar tu cuenta en cualquier momento en "Ajustes".</p></div>
+      <div class="section"><h2>4. Datos que recopilamos</h2><p>Solo lo necesario:</p><ul><li>Email y contraseña (autenticación)</li><li>Nombre de la familia y miembros</li><li>Turnos, tipos de horario y tareas</li><li>Idioma elegido</li><li>Timestamps de creación/modificación</li></ul><p><b>No recopilamos</b> ubicación, contactos, cámara, micrófono ni IDs publicitarios.</p></div>
+      <div class="section"><h2>5. Cómo usamos tus datos</h2><ul><li>Autenticación y sesión</li><li>Mostrar la agenda a los miembros de la familia</li><li>Enviar invitaciones (solo cuando lo solicitas)</li><li>Mejorar estabilidad/seguridad</li></ul><p>No vendemos ni compartimos datos personales con fines publicitarios.</p></div>
+      <div class="section"><h2>6. Dónde se almacenan</h2><p>PostgreSQL gestionada por Supabase Inc. (EU-West), con Row Level Security. Emails de invitación vía Resend (eliminados tras 30 días).</p></div>
+      <div class="section"><h2>7. Retención</h2><p>Datos mantenidos mientras la cuenta esté activa. Al eliminar, todo se elimina en hasta 30 días. Ver <a href="./delete-account.html">Eliminar Cuenta</a>.</p></div>
+      <div class="section"><h2>8. Derechos (RGPD)</h2><ul><li>Acceder a tus datos en la App</li><li>Corregir datos</li><li>Eliminar cuenta (Ajustes)</li><li>Solicitar copia de tus datos por email</li><li>Retirar consentimiento (eliminar cuenta)</li></ul></div>
+      <div class="section"><h2>9. Menores</h2><p>Edad mínima 16 años. Los padres son responsables del uso por parte de sus hijos.</p></div>
+      <div class="section"><h2>10. Limitación de responsabilidad</h2><p>La App se proporciona "tal cual". No garantizamos disponibilidad ininterrumpida. No responsables de pérdidas indirectas.</p></div>
+      <div class="section"><h2>11. Cambios</h2><p>Podemos actualizar estos Términos. Los cambios significativos se comunicarán en la App.</p></div>
+      <div class="section"><h2>12. Contacto</h2><p><a href="mailto:suporte@familycalendar.grouprei.com">suporte@familycalendar.grouprei.com</a></p></div>
     </div>
 
-    <div class="section">
-      <h2>4. Dados que recolhemos</h2>
-      <p>Recolhemos apenas os dados necessários para prestar o serviço:</p>
-      <ul>
-        <li>Email e password (para autenticação)</li>
-        <li>Nome da família e dos membros (definidos por ti)</li>
-        <li>Turnos, tipos de horário e tarefas que crias</li>
-        <li>Idioma escolhido (Português, English ou Español)</li>
-        <li>Data e hora de criação/alteração dos registos</li>
-      </ul>
-      <p><b>Não recolhemos</b> dados de localização, contactos, câmara, microfone, ou identificadores publicitários.</p>
-    </div>
-
-    <div class="section">
-      <h2>5. Como usamos os teus dados</h2>
-      <ul>
-        <li>Para autenticação e para te manteres com sessão iniciada</li>
-        <li>Para mostrar a agenda partilhada aos membros da mesma família</li>
-        <li>Para enviar emails de convite (só quando és tu a convidar alguém)</li>
-        <li>Para melhorar a estabilidade e segurança do serviço</li>
-      </ul>
-      <p>Não vendemos, alugamos, nem partilhamos dados pessoais com terceiros para fins publicitários.</p>
-    </div>
-
-    <div class="section">
-      <h2>6. Onde ficam guardados os teus dados</h2>
-      <p>Os dados são armazenados numa base de dados PostgreSQL gerida pela Supabase Inc. (EU-West). Aplicamos políticas de segurança ao nível da linha (Row Level Security) que garantem que cada utilizador só consegue ver os dados da sua própria família.</p>
-      <p>Os emails de convite são enviados através do serviço Resend. Os emails são apagados dos nossos sistemas após 30 dias.</p>
-    </div>
-
-    <div class="section">
-      <h2>7. Retenção de dados</h2>
-      <p>Os dados são mantidos enquanto a tua conta estiver activa. Ao apagares a conta, todos os dados associados (membros criados por ti como owner, horários e tarefas) são apagados no prazo máximo de 30 dias. Ver <a href="./delete-account.html">Apagar Conta</a>.</p>
-    </div>
-
-    <div class="section">
-      <h2>8. Os teus direitos (RGPD)</h2>
-      <p>Podes, a qualquer momento:</p>
-      <ul>
-        <li>Aceder aos teus dados diretamente na App</li>
-        <li>Corrigir dados incorretos (Ajustes → Editar Perfil)</li>
-        <li>Apagar a tua conta e dados (Ajustes → Apagar Conta)</li>
-        <li>Pedir uma cópia dos teus dados enviando um email para suporte@familycalendar.grouprei.com</li>
-        <li>Retirar o consentimento (basta apagar a conta)</li>
-      </ul>
-    </div>
-
-    <div class="section">
-      <h2>9. Menores</h2>
-      <p>A App destina-se a utilizadores com pelo menos 16 anos de idade. Se és pai ou mãe e o teu filho utiliza a App, és responsável pela sua utilização.</p>
-    </div>
-
-    <div class="section">
-      <h2>10. Limitação de responsabilidade</h2>
-      <p>A App é fornecida "tal como está". Não garantimos disponibilidade ininterrupta ou ausência total de erros. Não somos responsáveis por perdas indiretas resultantes da utilização ou da impossibilidade de utilização da App.</p>
-    </div>
-
-    <div class="section">
-      <h2>11. Alterações a estes termos</h2>
-      <p>Podemos atualizar estes Termos periodicamente. A data da última atualização está indicada no topo. Alterações significativas serão comunicadas via notificação dentro da App.</p>
-    </div>
-
-    <div class="section">
-      <h2>12. Contacto</h2>
-      <p>Para qualquer questão relacionada com estes Termos ou com a tua privacidade:</p>
-      <p><a href="mailto:suporte@familycalendar.grouprei.com">suporte@familycalendar.grouprei.com</a></p>
-    </div>
-
-    <footer>© 2026 Agenda da Família · Grouprei</footer>
+    <footer>© 2026 · Grouprei</footer>
   </div>
+
+  <script>
+    (function(){
+      var qs=new URLSearchParams(location.search);
+      var initial=qs.get('lang')||localStorage.getItem('fa_lang')||(navigator.language||'pt').slice(0,2).toLowerCase();
+      if(!['pt','en','es'].includes(initial)) initial='pt';
+      function setLang(c){document.documentElement.setAttribute('lang',c);try{localStorage.setItem('fa_lang',c);}catch(e){}document.querySelectorAll('[data-lang]').forEach(function(el){el.classList.toggle('on',el.getAttribute('data-lang')===c)});document.querySelectorAll('.lang button').forEach(function(b){b.classList.toggle('active',b.getAttribute('data-set')===c)});}
+      document.querySelectorAll('.lang button').forEach(function(b){b.addEventListener('click',function(){setLang(b.getAttribute('data-set'))})});
+      setLang(initial);
+    })();
+  </script>
 </body>
 </html>
