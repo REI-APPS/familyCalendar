@@ -1,0 +1,82 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="index,follow">
+  <title>About · Family Agenda</title>
+  <meta name="description" content="Family Agenda is a mobile shared calendar app for families with shifts, tasks and Android widgets.">
+  <style>
+    :root{--pink:#FF8FA3;--bg:#FDFDF9;--surface:#fff;--text:#2D3142;--muted:#7D8299;--border:#E8E5DC}
+    *{box-sizing:border-box}html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;line-height:1.55}
+    a{color:var(--pink);text-decoration:none;font-weight:700}a:hover{text-decoration:underline}
+    .container{max-width:720px;margin:0 auto;padding:24px 20px 60px}
+    .lang{display:flex;gap:6px;justify-content:flex-end;margin-bottom:8px}
+    .lang button{padding:6px 12px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--muted);font-weight:800;font-size:12px;letter-spacing:.4px;cursor:pointer}
+    .lang button.active{background:var(--pink);border-color:var(--pink);color:#fff}
+    header{text-align:center;padding:16px 0 24px}
+    header img{width:96px;height:96px;border-radius:24px}
+    header h1{margin:12px 0 4px;font-size:28px}
+    header p{margin:0;color:var(--muted);font-size:14px}
+    .section{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px;margin:14px 0}
+    .section h2{margin:0 0 10px;font-size:18px}
+    .section p{margin:6px 0;color:var(--muted);font-size:15px}
+    ul{padding-left:20px;color:var(--muted)}li{margin:4px 0}
+    footer{text-align:center;margin-top:24px;color:var(--muted);font-size:12px}
+    [data-lang]{display:none}[data-lang].on{display:block}
+    [data-inline][data-lang]{display:none}[data-inline][data-lang].on{display:inline}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="lang"><button type="button" data-set="pt" class="active">PT</button><button type="button" data-set="en">EN</button><button type="button" data-set="es">ES</button></div>
+
+    <header>
+      <img src="./icon.png" alt="">
+      <h1 data-inline data-lang="pt" class="on">Agenda da Família</h1>
+      <h1 data-inline data-lang="en">Family Agenda</h1>
+      <h1 data-inline data-lang="es">Agenda Familiar</h1>
+      <p data-inline data-lang="pt" class="on">Uma agenda partilhada, feita para famílias.</p>
+      <p data-inline data-lang="en">A shared calendar, made for families.</p>
+      <p data-inline data-lang="es">Un calendario compartido, hecho para familias.</p>
+    </header>
+
+    <div data-lang="pt" class="on">
+      <div class="section"><h2>O que é a Agenda da Família?</h2><p>A Agenda da Família é uma app móvel que ajuda as famílias a organizarem os seus horários no dia-a-dia. Cada membro pode ter turnos, tarefas e compromissos próprios, todos visíveis num único calendário partilhado.</p></div>
+      <div class="section"><h2>Funcionalidades principais</h2><ul><li>Calendário mensal, semanal e diário partilhado</li><li>Turnos personalizáveis por membro (manhã, tarde, noite, folga, etc.)</li><li>Tarefas rápidas do dia com estado "por fazer" / "feito"</li><li>Convites por email para novos membros</li><li>3 widgets nativos para Android</li><li>Notificação de alterações recentes na próxima quinzena</li><li>Exportação da vista mensal para PDF</li><li>Suporte multi-idioma: Português, English, Español</li></ul></div>
+      <div class="section"><h2>Privacidade</h2><p>Os teus dados de família ficam guardados numa base de dados isolada, com políticas de segurança ao nível da linha (RLS). Não vendemos nem partilhamos dados pessoais com terceiros. Consulta os <a href="./terms.html">Termos & Privacidade</a>.</p></div>
+      <div class="section"><h2>Contacto & Suporte</h2><p>Dúvidas ou sugestões? <a href="mailto:suporte@familycalendar.grouprei.com">suporte@familycalendar.grouprei.com</a></p></div>
+      <div class="section"><h2>Apagar a tua conta</h2><p>Podes apagar a tua conta em qualquer momento nos ajustes da app, ou consultar as instruções em <a href="./delete-account.html">Apagar Conta</a>.</p></div>
+    </div>
+
+    <div data-lang="en">
+      <div class="section"><h2>What is Family Agenda?</h2><p>Family Agenda is a mobile app that helps families organize their daily schedules. Each family member can have their own shifts, tasks and appointments, all visible on a single shared calendar.</p></div>
+      <div class="section"><h2>Main features</h2><ul><li>Monthly, weekly and daily shared calendar</li><li>Customizable shifts per member (morning, afternoon, night, off, etc.)</li><li>Quick daily tasks with "todo" / "done" state</li><li>Email invitations for new members</li><li>3 native widgets for Android</li><li>Notifications for recent changes in the next 14 days</li><li>PDF export of monthly view</li><li>Multi-language: Português, English, Español</li></ul></div>
+      <div class="section"><h2>Privacy</h2><p>Your family data is stored in an isolated database with Row Level Security policies. We do not sell or share personal data with third parties. See <a href="./terms.html">Terms & Privacy</a>.</p></div>
+      <div class="section"><h2>Contact & Support</h2><p>Questions or suggestions? <a href="mailto:suporte@familycalendar.grouprei.com">suporte@familycalendar.grouprei.com</a></p></div>
+      <div class="section"><h2>Delete your account</h2><p>You can delete your account at any time from the app settings, or see the instructions at <a href="./delete-account.html">Delete Account</a>.</p></div>
+    </div>
+
+    <div data-lang="es">
+      <div class="section"><h2>¿Qué es Agenda Familiar?</h2><p>Agenda Familiar es una app móvil que ayuda a las familias a organizar sus horarios diarios. Cada miembro puede tener sus propios turnos, tareas y compromisos, todos visibles en un único calendario compartido.</p></div>
+      <div class="section"><h2>Funcionalidades principales</h2><ul><li>Calendario mensual, semanal y diario compartido</li><li>Turnos personalizables por miembro (mañana, tarde, noche, libre, etc.)</li><li>Tareas rápidas del día con estado "por hacer" / "hecho"</li><li>Invitaciones por email para nuevos miembros</li><li>3 widgets nativos para Android</li><li>Notificación de cambios recientes en los próximos 14 días</li><li>Exportar vista mensual a PDF</li><li>Soporte multi-idioma: Português, English, Español</li></ul></div>
+      <div class="section"><h2>Privacidad</h2><p>Los datos de tu familia se almacenan en una base de datos aislada, con políticas Row Level Security. No vendemos ni compartimos datos personales con terceros. Consulta los <a href="./terms.html">Términos & Privacidad</a>.</p></div>
+      <div class="section"><h2>Contacto & Soporte</h2><p>¿Dudas o sugerencias? <a href="mailto:suporte@familycalendar.grouprei.com">suporte@familycalendar.grouprei.com</a></p></div>
+      <div class="section"><h2>Eliminar tu cuenta</h2><p>Puedes eliminar tu cuenta en cualquier momento desde los ajustes de la app, o consultar las instrucciones en <a href="./delete-account.html">Eliminar Cuenta</a>.</p></div>
+    </div>
+
+    <footer>© 2026 · Grouprei</footer>
+  </div>
+
+  <script>
+    (function(){
+      var qs=new URLSearchParams(location.search);
+      var initial=qs.get('lang')||localStorage.getItem('fa_lang')||(navigator.language||'pt').slice(0,2).toLowerCase();
+      if(!['pt','en','es'].includes(initial)) initial='pt';
+      function setLang(c){document.documentElement.setAttribute('lang',c);try{localStorage.setItem('fa_lang',c);}catch(e){}document.querySelectorAll('[data-lang]').forEach(function(el){el.classList.toggle('on',el.getAttribute('data-lang')===c)});document.querySelectorAll('.lang button').forEach(function(b){b.classList.toggle('active',b.getAttribute('data-set')===c)});}
+      document.querySelectorAll('.lang button').forEach(function(b){b.addEventListener('click',function(){setLang(b.getAttribute('data-set'))})});
+      setLang(initial);
+    })();
+  </script>
+</body>
+</html>
