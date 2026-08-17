@@ -1,5 +1,6 @@
 import type { WidgetTaskHandlerProps } from 'react-native-android-widget';
 import { addDays, format, startOfWeek } from 'date-fns';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AgendaWidget } from '../widgets/AgendaWidget';
 import { AgendaWeekWidget } from '../widgets/AgendaWeekWidget';
 import { AgendaPlusWidget } from '../widgets/AgendaPlusWidget';
@@ -10,6 +11,8 @@ const WIDGET_DAY_KEY = 'widget_day_offset';
 const WIDGET_TRANSPARENT_KEY = 'widget_transparent';
 const WIDGET_LOCALE_KEY = 'widget_locale';
 const WIDGET_STATUS_KEY = 'widget_last_refresh_status';
+// KEEP IN SYNC with SUPABASE_SESSION_KEY in src/lib/supabase.ts
+const SUPABASE_SESSION_KEY = 'sb-family-auth-session';
 
 const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
 const SUPABASE_ANON = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -55,12 +58,71 @@ async function writeCache(cache: Cache): Promise<void> {
 }
 
 /**
- * Refresh JWT using the refresh_token STORED IN THE WIDGET CACHE.
- * Writes the rotated tokens back into the same cache so both the widget AND
- * the next app open see the latest refresh_token.
+ * Read the LATEST tokens available. We look at:
+ *   1. The supabase-js session storage (source of truth after each app run)
+ *   2. The widget cache (may hold tokens the widget refreshed in background)
+ * Whichever has the more recent expires_at wins.
  */
-async function refreshAccessToken(cache: Cache): Promise<string | null> {
-  const rt = cache.refresh_token;
+async function readLatestTokens(cache: Cache | null): Promise<{ access_token?: string | null; refresh_token?: string | null; expires_at?: number | null }> {
+  let sb: any = null;
+  try {
+    const raw = await AsyncStorage.getItem(SUPABASE_SESSION_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      // supabase-js may wrap as { currentSession: {...} } or store flat
+      sb = parsed?.currentSession || parsed?.session || parsed;
+    }
+  } catch {}
+  const sbExp = Number(sb?.expires_at || 0);
+  const cacheExp = Number(cache?.expires_at || 0);
+  if (sb?.access_token && sbExp >= cacheExp) {
+    return { access_token: sb.access_token, refresh_token: sb.refresh_token, expires_at: sbExp };
+  }
+  if (cache?.access_token) {
+    return { access_token: cache.access_token, refresh_token: cache.refresh_token, expires_at: cacheExp };
+  }
+  return { access_token: sb?.access_token ?? null, refresh_token: sb?.refresh_token ?? null, expires_at: sbExp || null };
+}
+
+/**
+ * Write refreshed tokens to BOTH the widget cache AND the supabase-js session
+ * storage. This is critical: when the user opens the app after a background
+ * widget refresh, supabase-js must find the NEW (non-revoked) refresh_token,
+ * otherwise it logs the user out on the next call.
+ */
+async function writeSessionEverywhere(newSess: { access_token: string; refresh_token?: string; expires_at?: number; expires_in?: number; token_type?: string }, cache: Cache | null): Promise<void> {
+  // 1) Update the widget cache
+  if (cache) {
+    cache.access_token = newSess.access_token;
+    cache.refresh_token = newSess.refresh_token ?? cache.refresh_token;
+    cache.expires_at = newSess.expires_at ?? cache.expires_at;
+    await writeCache(cache);
+  }
+  // 2) Update the supabase-js session storage (merge with any existing fields, e.g. user)
+  try {
+    const raw = await AsyncStorage.getItem(SUPABASE_SESSION_KEY);
+    let base: any = {};
+    if (raw) {
+      try { base = JSON.parse(raw) || {}; } catch {}
+    }
+    // Preserve any wrapper shape the installed supabase-js version uses
+    if (base && typeof base === 'object' && base.currentSession) {
+      base.currentSession = { ...base.currentSession, ...newSess };
+    } else if (base && typeof base === 'object' && base.session) {
+      base.session = { ...base.session, ...newSess };
+    } else {
+      base = { ...base, ...newSess };
+    }
+    await AsyncStorage.setItem(SUPABASE_SESSION_KEY, JSON.stringify(base));
+  } catch {}
+}
+
+/**
+ * Refresh JWT using the latest refresh_token available anywhere.
+ */
+async function refreshAccessToken(cache: Cache | null): Promise<string | null> {
+  const latest = await readLatestTokens(cache);
+  const rt = latest.refresh_token;
   if (!rt) return null;
   try {
     const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
@@ -74,10 +136,13 @@ async function refreshAccessToken(cache: Cache): Promise<string | null> {
     }
     const data = await res.json();
     if (data?.access_token) {
-      cache.access_token = data.access_token;
-      cache.refresh_token = data.refresh_token ?? cache.refresh_token;
-      cache.expires_at = data.expires_at ?? cache.expires_at;
-      await writeCache(cache);
+      await writeSessionEverywhere({
+        access_token: data.access_token,
+        refresh_token: data.refresh_token,
+        expires_at: data.expires_at,
+        expires_in: data.expires_in,
+        token_type: data.token_type,
+      }, cache);
       return data.access_token as string;
     }
     return null;
@@ -103,7 +168,7 @@ async function rest(token: string, path: string): Promise<{ ok: boolean; status:
   }
 }
 
-async function restWithRetry(cache: Cache, token: string, path: string): Promise<{ data: any[]; token: string }> {
+async function restWithRetry(cache: Cache | null, token: string, path: string): Promise<{ data: any[]; token: string }> {
   let r = await rest(token, path);
   if (r.ok) return { data: r.data || [], token };
   if (r.status === 401) {
@@ -120,7 +185,9 @@ async function fetchFresh(): Promise<Cache | null> {
   const cache = await readCache();
   if (!cache) { await setStatus('no-cache'); return null; }
   if (!cache.familyId) { await setStatus('no-family'); return cache; }
-  let token = cache.access_token || '';
+  // Always pull the LATEST tokens (may have been refreshed by the app in the meantime)
+  const latest = await readLatestTokens(cache);
+  let token = latest.access_token || '';
   if (!token) {
     const fresh = await refreshAccessToken(cache);
     if (!fresh) { await setStatus('no-token'); return cache; }

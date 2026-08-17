@@ -1,0 +1,40 @@
+{
+  "summary": "Code review PASS for session-persistence + widget-refresh fix. All 5 verification points confirmed. HTTP smoke test on http://localhost:3000/ returned 200. widgetTaskHandler.tsx correctly parses all 3 supabase-js session wrapper shapes, writes rotated tokens to both storages while preserving user data, refreshAccessToken handles failures gracefully (returns null, no throw). SUPABASE_SESSION_KEY matches ('sb-family-auth-session') in both widgetTaskHandler.tsx (line 15) and lib/supabase.ts (line 42). lib/supabase.ts has explicit storageKey, autoRefreshToken:true, persistSession:true. lib/widgetUpdate.tsx persistCache() snapshots session tokens (access_token/refresh_token/expires_at) into widget cache. All 3 widget files (Agenda/AgendaWeek/AgendaPlus) have clickActionData={{}} on every clickAction=\"REFRESH_AGENDA\" (2 pairs each). Reminder: user needs a fresh EAS native build for widget-side changes to take effect on device.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "verification_results": {
+    "1_readLatestTokens_wrapper_parsing": "PASS - line 73: `parsed?.currentSession || parsed?.session || parsed` covers all three shapes; picks the token with the higher expires_at between supabase-js storage and widget cache (lines 76-84).",
+    "2_writeSessionEverywhere_merges_preserving_user": "PASS - lines 103-116: reads existing raw session, JSON.parses into `base`, then merges via spread while preserving detected wrapper shape (currentSession | session | flat). `base.currentSession = { ...base.currentSession, ...newSess }` preserves the pre-existing `user` field and any other keys not in newSess.",
+    "3_refreshAccessToken_graceful_failure": "PASS - lines 123-153: no refresh_token -> return null; non-2xx response -> setStatus('refresh:<code>') + return null; network throw wrapped in try/catch -> setStatus('refresh:err') + return null. No unhandled exception can escape and crash the headless handler.",
+    "4_SUPABASE_SESSION_KEY_matches": "PASS - both files use the exact string 'sb-family-auth-session' (widgetTaskHandler.tsx:15, supabase.ts:42). Additionally supabase.ts exports SUPABASE_SESSION_KEY, and widgetTaskHandler.tsx has a KEEP-IN-SYNC comment.",
+    "5_supabase_client_config": "PASS - supabase.ts lines 45-53: storageKey: SUPABASE_SESSION_KEY, autoRefreshToken: true, persistSession: true, detectSessionInUrl: false. Storage set to AsyncStorage on non-web.",
+    "6_persistCache_writes_tokens": "PASS - widgetUpdate.tsx lines 42-58: calls supabase.auth.getSession() and persists access_token, refresh_token, expires_at into widget_data_cache alongside the family data.",
+    "7_clickActionData_present": "PASS - AgendaWidget.tsx (lines 90-91, 103-104), AgendaWeekWidget.tsx (lines 69-70, 83-84), AgendaPlusWidget.tsx (lines 113-114, 126-127). Every clickAction=\"REFRESH_AGENDA\" is paired with clickActionData={{}} (empty object literal in JSX).",
+    "8_http_smoke_test": "PASS - curl http://localhost:3000/ -> HTTP 200 OK."
+  },
+  "critical_code_review_comments": [
+    "Minor (non-blocking): In writeSessionEverywhere, the widget-cache branch uses `newSess.refresh_token ?? cache.refresh_token` (preserves prior on nullish), but the supabase-js branch uses object spread `{...currentSession, ...newSess}` which WILL overwrite refresh_token with undefined if Supabase ever omits it. In practice Supabase always returns a new refresh_token on rotation, so this is safe today, but if you want defense-in-depth, drop undefined keys from newSess before spreading.",
+    "Minor: setStatus write to storage inside catch blocks in refreshAccessToken is fine but the `await setStatus(...)` inside catch relies on storage still working; wrapping in try/catch inside setStatus already covers this. OK.",
+    "Deprecated package: none of expo-av / expo-barcode-scanner / expo-background-fetch detected in the modified files. Full package-audit was out of scope for this review."
+  ],
+  "action_items": [
+    "USER ACTION REQUIRED: Ship a new EAS Android build (native rebuild) — widget code changes do not propagate through OTA/Expo Go. Without a native rebuild the user will keep seeing the OLD widget task handler and the fix will appear to do nothing.",
+    "Optional hardening: in writeSessionEverywhere strip undefined keys from newSess before merging into the supabase-js session so a partial refresh response can never blank out refresh_token.",
+    "Optional: after the next rebuild, ask the user to (a) log in, (b) leave the app closed for >2 days, (c) tap the widget refresh — expected: widget refreshes without forcing re-login, and opening the app keeps the session."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (no backend endpoints in scope)", "frontend": "100% (code review — 8/8 checks pass)"},
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Widget behavior can only be validated end-to-end on a real Android device with a fresh EAS build. Web/Expo Go cannot exercise the headless widgetTaskHandler. For future iterations, only re-verify if widgetTaskHandler.tsx, lib/supabase.ts, lib/widgetUpdate.tsx, or the 3 widget files change.",
+  "rca_of_issue": "Root cause (confirmed correct in review): supabase refresh_token rotation invalidates the previous refresh_token immediately. Before the fix, the widget task handler rotated the token in the background but only wrote the new pair to widget_data_cache. After 2+ days without foreground use, supabase-js on next app-open still had the pre-rotation refresh_token in 'sb-family-auth-session' -> POST /token?grant_type=refresh_token returned 401 -> supabase-js dropped the session and forced re-login. Fix (widgetTaskHandler.tsx writeSessionEverywhere) now writes the rotated pair back into the exact AsyncStorage key supabase-js uses (SUPABASE_SESSION_KEY, matched in supabase.ts), inside whichever wrapper shape is present, preserving the `user` object. readLatestTokens ensures the handler always uses the freshest refresh_token from either source. This closes the divergence and should eliminate the forced-logout-after-2-days symptom, provided the user installs a native rebuild containing these changes."
+}

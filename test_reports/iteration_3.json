@@ -1,0 +1,75 @@
+{
+  "summary": "Static code review of widget refresh fix (react-native-android-widget). All 5 verification points PASS. Every `clickAction=\"REFRESH_AGENDA\"` in all 3 widget files (AgendaWidget, AgendaWeekWidget, AgendaPlusWidget) has a matching `clickActionData={{}}` on the very next line inside the same JSX prop block. No other clickAction values (OPEN_APP/OPEN_URI) exist. The task handler correctly dispatches to renderAgenda/renderWeek/renderPlus for the 3 widgetNames and triggers fetchFresh() on WIDGET_CLICK, WIDGET_UPDATE and WIDGET_ADDED. app.json declares updatePeriodMillis and resizeMode for all 3 widgets. Token pipeline (readLatestTokens → restWithRetry → refreshAccessToken on 401 → writeSessionEverywhere writing BOTH widget cache and sb-family-auth-session) is intact. HTTP smoke test: 200. NOTE: Only a fresh EAS Android build will apply the native fix on-device — the user's existing installed build must be rebuilt/reinstalled.",
+  "verification_results": {
+    "point_1_widget_files": {
+      "status": "PASS",
+      "AgendaWidget.tsx": {
+        "root_FlexWidget": "PASS — line 90 clickAction=\"REFRESH_AGENDA\" + line 91 clickActionData={{}}",
+        "inner_date_column": "PASS — line 103 clickAction=\"REFRESH_AGENDA\" + line 104 clickActionData={{}}",
+        "no_other_clickActions": "PASS — grep confirms only REFRESH_AGENDA present"
+      },
+      "AgendaWeekWidget.tsx": {
+        "root_FlexWidget": "PASS — line 69 clickAction=\"REFRESH_AGENDA\" + line 70 clickActionData={{}}",
+        "inner_refresh_header_cell": "PASS — line 83 clickAction=\"REFRESH_AGENDA\" + line 84 clickActionData={{}}",
+        "no_other_clickActions": "PASS"
+      },
+      "AgendaPlusWidget.tsx": {
+        "root_FlexWidget": "PASS — line 113 clickAction=\"REFRESH_AGENDA\" + line 114 clickActionData={{}}",
+        "inner_date_refresh_column": "PASS — line 126 clickAction=\"REFRESH_AGENDA\" + line 127 clickActionData={{}}",
+        "no_other_clickActions": "PASS"
+      }
+    },
+    "point_2_handler_dispatch": {
+      "status": "PASS",
+      "file": "/app/frontend/src/widgets/widgetTaskHandler.tsx",
+      "Agenda_dispatch": "line 319 → renderAgenda",
+      "AgendaWeek_dispatch": "line 320 → renderWeek",
+      "AgendaPlus_dispatch": "line 321 → renderPlus",
+      "shouldFetch_expression": "line 316: `shouldFetch = isClick || isPeriodic || isAdded` — where isClick=WIDGET_CLICK (l.311), isPeriodic=WIDGET_UPDATE (l.312), isAdded=WIDGET_ADDED (l.313). fetchFresh() called at line 317."
+    },
+    "point_3_app_json": {
+      "status": "PASS",
+      "Agenda": "updatePeriodMillis=1800000 (l.66), resizeMode=\"horizontal|vertical\" (l.67)",
+      "AgendaWeek": "updatePeriodMillis=1800000 (l.78), resizeMode=\"horizontal|vertical\" (l.79)",
+      "AgendaPlus": "updatePeriodMillis=1800000 (l.92), resizeMode=\"horizontal|vertical\" (l.93)"
+    },
+    "point_4_session_token_pipeline": {
+      "status": "PASS",
+      "readLatestTokens_called_before_REST": "line 189 in fetchFresh()",
+      "refreshAccessToken_on_401": "restWithRetry() line 174-179 calls refreshAccessToken(cache) when r.status===401 and retries",
+      "writeSessionEverywhere_after_refresh": "refreshAccessToken() lines 139-145 invokes writeSessionEverywhere",
+      "writes_to_both_stores": "writeSessionEverywhere (l.93-118): (1) updates widget cache via writeCache (l.99), (2) writes to AsyncStorage under SUPABASE_SESSION_KEY='sb-family-auth-session' (l.15, l.116)"
+    },
+    "point_5_http_smoke": {
+      "status": "PASS",
+      "curl_http_localhost_3000": "200"
+    }
+  },
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "minor_style_observations": [
+    "In AgendaWidget.tsx (l.104), AgendaWeekWidget.tsx (l.84) and AgendaPlusWidget.tsx (l.127) the `clickActionData={{}}` line is indented 6 spaces while the sibling `clickAction=\"REFRESH_AGENDA\"` is indented 8 spaces — purely cosmetic, does NOT affect the JSX prop parsing or the fix (both props still land on the same element). Optional: run Prettier for consistent indentation."
+  ],
+  "action_items": [
+    "None required for the fix itself — all 5 verification points PASS.",
+    "IMPORTANT: User must generate and install a NEW EAS Android build. The native RNWidgetProvider.java NPE fix only takes effect when a fresh build is installed; the user's existing installed APK/AAB will continue to crash silently on tap.",
+    "Optional cosmetic: normalize indentation of the `clickActionData={{}}` lines (l.104 AgendaWidget, l.84 AgendaWeekWidget, l.127 AgendaPlusWidget)."
+  ],
+  "critical_code_review_comments": [
+    "Fix is correctly applied on every clickAction site — no missing pair.",
+    "Token pipeline is robust: readLatestTokens compares expires_at between supabase-js session and widget cache and picks the freshest; on 401 refresh is retried and the refreshed session is persisted to BOTH stores, avoiding the 'user gets logged out after background refresh' class of bugs.",
+    "widgetTaskHandler dispatches by widgetInfo.widgetName which matches the three names declared in app.json ('Agenda', 'AgendaWeek', 'AgendaPlus') — no name-mismatch risk.",
+    "All 3 widgets share fetchFresh() so the auth refresh behavior is uniform."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (skipped per request)", "frontend": "100% (static review)"},
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "This iteration was a static code review only (no runtime testing possible for Android widgets in this environment). If future iterations get an Android device / emulator, verify by tapping each of the 3 widget tiles and confirming (a) new data appears, (b) status key 'widget_last_refresh_status' updates to `ok:HH:MM:SS`, (c) no NullPointerException in adb logcat from RNWidgetProvider."
+}
