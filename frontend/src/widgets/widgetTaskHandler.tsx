@@ -152,7 +152,9 @@ async function refreshAccessToken(cache: Cache | null): Promise<string | null> {
   }
 }
 
-async function rest(token: string, path: string): Promise<{ ok: boolean; status: number; data: any }> {
+async function rest(token: string, path: string, timeoutMs = 8000): Promise<{ ok: boolean; status: number; data: any }> {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
       headers: {
@@ -160,11 +162,14 @@ async function rest(token: string, path: string): Promise<{ ok: boolean; status:
         Authorization: `Bearer ${token}`,
         Accept: 'application/json',
       },
+      signal: ctrl.signal as any,
     });
     const data = res.ok ? await res.json() : null;
     return { ok: res.ok, status: res.status, data };
   } catch {
     return { ok: false, status: 0, data: null };
+  } finally {
+    clearTimeout(timer);
   }
 }
 
@@ -304,19 +309,42 @@ function renderPlus(props: WidgetTaskHandlerProps, cache: Cache | null, dayOffse
   );
 }
 
+function renderFor(widgetName: string, props: WidgetTaskHandlerProps, cache: Cache | null, dayOffset: number, transparent: boolean, locale: 'pt' | 'en' | 'es') {
+  if (widgetName === 'Agenda') renderAgenda(props, cache, dayOffset, transparent, locale);
+  else if (widgetName === 'AgendaWeek') renderWeek(props, cache, transparent, locale);
+  else if (widgetName === 'AgendaPlus') renderPlus(props, cache, dayOffset, transparent, locale);
+}
+
 export async function widgetTaskHandler(props: WidgetTaskHandlerProps) {
   const { widgetInfo, widgetAction } = props;
   const { dayOffset, transparent, locale } = await readSettings();
+  const widgetName = widgetInfo.widgetName;
 
   const isClick = widgetAction === 'WIDGET_CLICK';
   const isPeriodic = widgetAction === 'WIDGET_UPDATE';
   const isAdded = widgetAction === 'WIDGET_ADDED';
-
-  // Any click OR any periodic update tries to fetch fresh data.
   const shouldFetch = isClick || isPeriodic || isAdded;
-  const cache = shouldFetch ? await fetchFresh() : await readCache();
 
-  if (widgetInfo.widgetName === 'Agenda') renderAgenda(props, cache, dayOffset, transparent, locale);
-  else if (widgetInfo.widgetName === 'AgendaWeek') renderWeek(props, cache, transparent, locale);
-  else if (widgetInfo.widgetName === 'AgendaPlus') renderPlus(props, cache, dayOffset, transparent, locale);
+  // STEP 1 — Immediate render with whatever cache we have.
+  // This guarantees the widget shows something even if Android kills the
+  // task before the network fetch completes (which was happening before).
+  const initialCache = await readCache();
+  renderFor(widgetName, props, initialCache, dayOffset, transparent, locale);
+
+  if (!shouldFetch) return;
+
+  // STEP 2 — Fetch fresh data in the background (with per-request timeout).
+  // When done, render AGAIN with the fresh data. This 2-phase approach is
+  // required because headless JS tasks on Android have a short execution
+  // budget (~10-20s depending on OEM battery policy).
+  try {
+    const freshCache = await fetchFresh();
+    // Only re-render if we actually got something different; otherwise the
+    // user already saw the correct state in STEP 1.
+    if (freshCache) {
+      renderFor(widgetName, props, freshCache, dayOffset, transparent, locale);
+    }
+  } catch {
+    // Already rendered the cached version in STEP 1 — nothing to recover.
+  }
 }

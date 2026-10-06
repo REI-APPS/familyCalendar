@@ -49,7 +49,8 @@ function emptyLabel(loc?: string) {
  *   Linha 1: agenda de hoje (membro + horário)
  *   Linha 2: até 4 tarefas (renderizada APENAS quando há tarefas)
  *
- * Toda a área é clickAction=REFRESH_AGENDA (não abre a app).
+ * O refresh é disparado APENAS ao clicar no \u00edcone \u21bb da coluna da esquerda
+ * (clickAction=REFRESH_AGENDA). Clicar noutras áreas do widget não faz nada.
  */
 export function AgendaPlusWidget(props: AgendaPlusPayload) {
   const dateLocale = pickLocale(props.locale);
@@ -110,8 +111,6 @@ export function AgendaPlusWidget(props: AgendaPlusPayload) {
 
   return (
     <FlexWidget
-      clickAction="REFRESH_AGENDA"
-      clickActionData={{}}
       style={{
         height: 'match_parent',
         width: 'match_parent',
@@ -124,7 +123,7 @@ export function AgendaPlusWidget(props: AgendaPlusPayload) {
       {/* Left date / refresh button column */}
       <FlexWidget
         clickAction="REFRESH_AGENDA"
-      clickActionData={{}}
+        clickActionData={{}}
         style={{
           flexDirection: 'column',
           marginRight: 8,

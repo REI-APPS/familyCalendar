@@ -66,8 +66,6 @@ export function AgendaWeekWidget(props: AgendaWeekPayload) {
 
   return (
     <FlexWidget
-      clickAction="REFRESH_AGENDA"
-      clickActionData={{}}
       style={{
         height: 'match_parent',
         width: 'match_parent',
@@ -81,7 +79,7 @@ export function AgendaWeekWidget(props: AgendaWeekPayload) {
       <FlexWidget style={{ flexDirection: 'row', height: 30 }}>
         <FlexWidget
           clickAction="REFRESH_AGENDA"
-      clickActionData={{}}
+          clickActionData={{}}
           style={{
             width: labelColWidth,
             backgroundColor: headBg,
