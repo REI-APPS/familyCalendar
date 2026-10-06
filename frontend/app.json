@@ -102,6 +102,13 @@
     },
     "runtimeVersion": {
       "policy": "appVersion"
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "2ab9499f-ab89-4d37-8f2c-349c6ac3a7d8"
+      }
+    },
+    "owner": "nrei"
   }
 }
