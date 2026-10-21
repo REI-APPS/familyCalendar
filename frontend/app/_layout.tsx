@@ -11,7 +11,10 @@ import { FamilyProvider } from '../src/contexts/FamilyContext';
 import { ConfirmProvider } from '../src/lib/ConfirmProvider';
 import { hydrateLanguage } from '../src/i18n';
 import { persistWidgetLocale } from '../src/lib/widgetUpdate';
-import '../widget-task-handler';
+// NOTE: ../widget-task-handler is now registered in /index.js (project entry
+// point) so it's available in the HEADLESS JS context Android uses for widget
+// taps and periodic updates when the app is not open. Importing here was not
+// enough — _layout only runs when the app is actually mounted.
 
 // In production builds silence console output to avoid leaking IDs/structure
 // in logs that could be captured on rooted devices.
