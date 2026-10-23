@@ -1,0 +1,38 @@
+{
+  "summary": "Code review PASS for the two-phase (STEP 1 cached render + STEP 2 background fetch) defensive fix in widgetTaskHandler.tsx. All 5 verification points from the review request pass. HTTP smoke test on http://localhost:3000/ returns 200. `rest()` now takes `timeoutMs=8000`, creates an AbortController and passes `signal` to fetch (widgetTaskHandler.tsx:155-174). `widgetTaskHandler` reads `widgetInfo.widgetName` once (line 321), calls `renderFor(widgetName, props, initialCache, ...)` IMMEDIATELY after readSettings/readCache and BEFORE any network fetch (line 332), then — only if `shouldFetch` (isClick || isPeriodic || isAdded, line 326) — awaits `fetchFresh()` inside a try/catch (line 340-349) and re-renders with fresh data when returned. Dispatcher `renderFor` correctly routes 'Agenda' → renderAgenda, 'AgendaWeek' → renderWeek, 'AgendaPlus' → renderPlus (lines 312-316). The react-native-android-widget type definition (register-widget-task-handler.d.ts:22) declares `renderWidget` as a plain function with no 'single-call' restriction, so calling it twice in the same task is supported. TypeScript diff: NO new errors introduced by this fix — the 3 TS2367 warnings reported by tsc on lines 46-47 are PRE-EXISTING (verified via `git show HEAD~1` — identical code existed before the fix) and relate to `readSettings()` narrowing of `storage.getItem` fallback literal types, which is orthogonal to the two-phase render change. REMINDER: a fresh EAS Android native build is REQUIRED for these widget-task-handler changes to take effect on-device; web/Expo-Go preview cannot exercise headless widget tasks.",
+  "verification_points": {
+    "1_rest_abort_and_signal": "PASS — widgetTaskHandler.tsx:155 `async function rest(token, path, timeoutMs = 8000)`. Line 156 `new AbortController()`. Line 157 `setTimeout(() => ctrl.abort(), timeoutMs)`. Line 165 passes `signal: ctrl.signal as any` to fetch. Line 172 `clearTimeout(timer)` in finally. widgetTaskHandler() reads widgetName once (line 321). Immediate render BEFORE fetch at line 332. shouldFetch = isClick || isPeriodic || isAdded (line 326). try/catch around fetchFresh (lines 340-349). Correct.",
+    "2_widgetName_dispatch": "PASS — renderFor at lines 312-316 dispatches: 'Agenda' → renderAgenda (line 313), 'AgendaWeek' → renderWeek (line 314), 'AgendaPlus' → renderPlus (line 315). Matches the 3 widget names declared in app.json (verified in iteration_3).",
+    "3_renderWidget_can_be_called_twice": "PASS — /app/frontend/node_modules/react-native-android-widget/lib/typescript/api/register-widget-task-handler.d.ts:22 declares `renderWidget: (widgetComponent: WidgetRepresentation) => void` with no documented single-invocation restriction. Two-phase STEP 1 + STEP 2 render is API-safe.",
+    "4_http_smoke_test": "PASS — curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/ → 200.",
+    "5_no_new_typescript_errors": "PASS — tsc output filtered for widgetTaskHandler|supabase.ts: 3 TS2367 warnings on widgetTaskHandler.tsx lines 46-47, confirmed PRE-EXISTING via `git show HEAD~1:frontend/src/widgets/widgetTaskHandler.tsx` (identical lines in previous commit). No new errors introduced by the two-phase render fix. Full tsc output:\n  src/widgets/widgetTaskHandler.tsx(46,19): error TS2367: comparison 'pt'|null vs 'en'\n  src/widgets/widgetTaskHandler.tsx(46,41): error TS2367: comparison 'pt'|null vs 'es'\n  src/widgets/widgetTaskHandler.tsx(47,57): error TS2367: comparison 'false'|null vs 'true'\n  No supabase.ts errors."
+  },
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": ["/app/test_reports/iteration_4.json"],
+  "action_items": [
+    "USER MUST RE-ISSUE AN EAS ANDROID NATIVE BUILD — widget headless-JS handler changes are compiled into the native bundle. Without a fresh build the device still runs the old blocking handler and the refresh button will still appear to do nothing.",
+    "Optional cleanup (pre-existing, not blocking): narrow readSettings return types to drop the 3 TS2367 warnings on widgetTaskHandler.tsx:46-47. E.g. type the three storage.getItem calls as `storage.getItem<string>(KEY, '0' as string)` or compare after cast. These warnings existed before this fix and do not affect runtime behavior.",
+    "On-device verification once the new build is installed: (a) click REFRESH on each of the 3 widget variants (Agenda / AgendaWeek / AgendaPlus) and confirm cached data appears instantly (STEP 1) then updates again within ~8s (STEP 2); (b) toggle airplane mode and tap refresh — widget must still show last cached state and not blank out; (c) check widget_last_refresh_status key after each test (ok:HH:MM:SS on success, refresh:401 / no-token / no-cache on failure paths)."
+  ],
+  "critical_code_review_comments": [
+    "Nit: `renderFor` silently no-ops if widgetInfo.widgetName is not one of the 3 expected values. For resilience against future widget-name typos, consider adding an `else` branch logging a warning + setting status (e.g. `setStatus('unknown-widget:' + widgetName)`).",
+    "Nit: the STEP 2 try/catch at line 340-349 catches thrown errors, but `fetchFresh()` is already written defensively (never throws — rest() swallows network errors and returns {ok:false}). The try/catch is a correct belt-and-braces measure, no change needed.",
+    "The 8s per-request timeout multiplied by 4 parallel REST calls (Promise.all) means worst-case STEP 2 wall-time is still ~8s (not 32s) because they run concurrently — well within Android's ~10-20s headless budget. Good."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (no backend tested — code review only per request)", "frontend": "100% (5/5 verification points PASS)"},
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Widget headless task handler is now a two-phase render: STEP 1 immediate cached render (always runs), STEP 2 fetch + re-render (only on WIDGET_CLICK/WIDGET_UPDATE/WIDGET_ADDED, with 8s AbortController per REST call). The fix is in /app/frontend/src/widgets/widgetTaskHandler.tsx lines 155-174 (rest with timeout) and 318-350 (handler). react-native-android-widget allows multiple renderWidget calls per task. The 3 pre-existing TS2367 warnings on lines 46-47 are from readSettings() literal-type narrowing — unrelated to this fix. End-to-end runtime testing requires a real Android device with a fresh EAS build; web preview cannot exercise headless widget tasks. If retesting, confirm (a) STEP 1 render happens before any `await` on fetchFresh, (b) each REST call still has signal:ctrl.signal, (c) widgetName dispatcher still routes 3 names.",
+  "rca_of_issue": "RCA (confirmed by code review): previous handler blocked `renderWidget` behind `await fetchFresh()` which issues 4 parallel Supabase REST calls with no timeout. On Android, headless JS tasks have a ~10-20s execution budget (OEM-dependent). If any single endpoint stalled (DNS, slow 3G, Supabase cold start), the task was killed by Android before `renderWidget` ever fired → user tapped REFRESH and nothing visible happened. Mitigation applied: (1) two-phase render — STEP 1 renders cached state synchronously before any `await`, guaranteeing the widget always updates visually on tap; (2) STEP 2 fetch has an 8s AbortController per REST call so a single hung endpoint cannot stall the whole refresh; (3) STEP 2 re-renders with fresh data when complete, otherwise user still sees correct STEP 1 state. User requires a fresh EAS Android build to receive these changes on-device."
+}

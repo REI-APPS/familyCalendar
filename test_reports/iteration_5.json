@@ -1,0 +1,77 @@
+{
+  "summary": "Code-review-only validation: refresh click scope now limited to the ↻ icon cell in all 3 Android widgets. Verified each widget file has EXACTLY ONE clickAction=\"REFRESH_AGENDA\" + EXACTLY ONE clickActionData={} pair, placed on the inner icon cell — NOT on the root FlexWidget. Pairs sit on adjacent lines with no `style=` between them. widgetTaskHandler.tsx still handles WIDGET_CLICK → shouldFetch=true → two-phase render (initial cache + fresh fetch) intact from iteration_4. HTTP smoke test on http://localhost:3000/ returned 200. User MUST produce a new EAS Android build for the change to reach the device — the web preview cannot exercise Android widgets.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "line_numbers": {
+    "AgendaWidget.tsx": {
+      "root_FlexWidget_line": 89,
+      "root_has_clickAction": false,
+      "inner_icon_cell_line": 100,
+      "clickAction_line": 101,
+      "clickActionData_line": 102,
+      "icon_glyph_line": 110,
+      "adjacent_no_style_between": true,
+      "total_clickAction_occurrences_in_code": 1,
+      "total_clickActionData_occurrences": 1
+    },
+    "AgendaWeekWidget.tsx": {
+      "root_FlexWidget_line": 68,
+      "root_has_clickAction": false,
+      "inner_refresh_header_cell_line": 80,
+      "clickAction_line": 81,
+      "clickActionData_line": 82,
+      "icon_glyph_line": 92,
+      "adjacent_no_style_between": true,
+      "total_clickAction_occurrences_in_code": 1,
+      "total_clickActionData_occurrences": 1
+    },
+    "AgendaPlusWidget.tsx": {
+      "root_FlexWidget_line": 112,
+      "root_has_clickAction": false,
+      "inner_date_refresh_column_line": 123,
+      "clickAction_line": 124,
+      "clickActionData_line": 125,
+      "icon_glyph_line": 140,
+      "adjacent_no_style_between": true,
+      "total_clickAction_occurrences_in_code": 1,
+      "total_clickActionData_occurrences": 1,
+      "note": "grep -c returned 2 for clickAction, but 1 match is inside a STALE comment at line 52 (`* Toda a área é clickAction=REFRESH_AGENDA (não abre a app).`). Only 1 real JSX attribute."
+    }
+  },
+  "task_handler_check": {
+    "file": "/app/frontend/src/widgets/widgetTaskHandler.tsx",
+    "WIDGET_CLICK_detection_line": 323,
+    "shouldFetch_computation_line": 326,
+    "phase1_initial_render_line": 332,
+    "phase2_fresh_fetch_line": 341,
+    "phase2_rerender_line": 345,
+    "two_phase_render_intact": true
+  },
+  "http_smoke_test": {
+    "url": "http://localhost:3000/",
+    "status_code": 200,
+    "passed": true
+  },
+  "test_report_links": [],
+  "action_items": [
+    "USER MUST build a NEW EAS Android build (eas build -p android) for this change to take effect on the device — the stripped clickAction on the root FlexWidget only applies after reinstalling the APK.",
+    "Minor cosmetic: stale doc comment in AgendaPlusWidget.tsx line 52 says 'Toda a área é clickAction=REFRESH_AGENDA (não abre a app).' — this is now false (only the icon column is clickable). Recommend updating to 'Apenas o ícone ↻ dispara REFRESH_AGENDA.' Low priority."
+  ],
+  "critical_code_review_comments": [
+    "All three widget files are now consistent: single clickAction/clickActionData pair on the inner refresh column/cell. Root containers are inert (no accidental refresh on background tap).",
+    "The clickAction + clickActionData pairs are correctly adjacent in all three files (no `style=` or other prop interleaved), satisfying the iteration_3 pairing requirement.",
+    "widgetTaskHandler.tsx WIDGET_CLICK → shouldFetch → fetchFresh → re-render pipeline is unchanged; refresh behaviour will still work, just scoped to the icon tap."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A", "frontend": "100%"},
+  "seed_data_creation": "none",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Widgets can only be functionally verified on a real Android device after a new EAS build. Future iterations should: (1) confirm user's new APK was installed, (2) verify tapping outside the ↻ icon does NOT trigger refresh, (3) verify tapping ↻ icon triggers a cache refresh (writes new timestamp to WIDGET_STATUS_KEY='widget_last_refresh_status' via setStatus()). The web preview at localhost:3000 cannot host Android widgets.",
+  "rca_of_issue": "N/A — this iteration is a verification of a scope reduction already applied by E1."
+}
